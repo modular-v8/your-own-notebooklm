@@ -1,0 +1,36 @@
+[project]
+name = "raglab"
+version = "0.1.0"
+description = "Provider-agnostic RAG eval harness and baseline pipeline."
+requires-python = "==3.12.*"
+dependencies = [
+    "typer>=0.12",
+    "pydantic>=2.7",
+    "pyyaml>=6.0",
+    "anthropic>=0.40",
+    "openai>=1.50",
+    "claude-agent-sdk>=0.1",
+    "python-dotenv>=1.0",
+]
+
+[project.scripts]
+raglab = "raglab.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/raglab"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+markers = [
+    "integration: requires network access and real provider credentials",
+]

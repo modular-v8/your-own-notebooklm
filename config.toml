@@ -1,0 +1,22 @@
+# raglab configuration. Secrets (ANTHROPIC_API_KEY, OPENROUTER_API_KEY) stay
+# in the environment (.env) -- never in this file.
+
+[provider]
+# One of: auto | agent_sdk | anthropic | openrouter
+# "auto" resolves at startup by credential availability, in this fixed order:
+# agent_sdk (claude CLI on PATH) -> anthropic (ANTHROPIC_API_KEY) -> openrouter (OPENROUTER_API_KEY).
+# Override without editing this file via the RAGLAB_PROVIDER environment variable.
+name = "auto"
+
+[answer]
+model = "claude-sonnet-5"
+# provider = "anthropic"  # uncomment to pin the answer role to a specific provider
+
+[judge]
+# Pinned independently of the answer model so swapping the answer model never
+# moves the ruler. Defaults to the same resolved provider as [provider].name.
+model = "claude-opus-5"
+# provider = "anthropic"  # uncomment to pin the judge role to a specific provider
+
+[run]
+concurrency = 5

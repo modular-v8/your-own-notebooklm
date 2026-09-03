@@ -1,0 +1,101 @@
+"""Report schema stability (null retrieval fields) and delta computation."""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+
+import pytest
+
+from raglab.evals.report import (
+    Aggregates,
+    EntryReport,
+    GoldSetRef,
+    Report,
+    ReportWriter,
+    RoleReportConfig,
+    RunConfig,
+    compute_delta,
+    find_matching_prior_report,
+    make_run_id,
+)
+
+BASE_CONFIG = RunConfig(
+    pipeline="whole_doc",
+    answer=RoleReportConfig(provider="anthropic", model="claude-sonnet-5"),
+    judge=RoleReportConfig(provider="anthropic", model="claude-opus-5"),
+    concurrency=5,
+)
+
+
+def _report(run_id: str, *, graded: int, grounded_rate: float) -> Report:
+    return Report(
+        run_id=run_id,
+        started_at=datetime.now(timezone.utc).isoformat(),
+        duration_s=1.0,
+        config=BASE_CONFIG,
+        gold_set=GoldSetRef(path="evals/gold/x.yaml", version=1, entry_count=graded),
+        corpus_hashes={"doc.md": "sha256:abc"},
+        aggregates=Aggregates(
+            grounded_rate=grounded_rate,
+            refusal_correct_rate=None,
+            graded=graded,
+            ungraded=0,
+            skipped=0,
+            errored=0,
+            input_tokens=100,
+            output_tokens=50,
+            p50_latency_s=1.5,
+        ),
+        entries=[EntryReport(id="q-001", status="graded", verdict="grounded")],
+    )
+
+
+def test_retrieval_fields_are_null_and_schema_accepts_them():
+    report = _report("r1", graded=1, grounded_rate=1.0)
+    assert report.aggregates.recall_at_k is None
+    assert report.aggregates.mrr is None
+    assert report.entries[0].retrieved is None
+    assert report.entries[0].recall_hit is None
+
+    # Round-trips through JSON without a schema change (Phase 1 populates these).
+    dumped = report.model_dump_json()
+    restored = Report.model_validate_json(dumped)
+    assert restored.aggregates.recall_at_k is None
+
+
+def test_writer_writes_readable_json(tmp_path):
+    report = _report("2026-01-01T00-00-00Z-baseline", graded=1, grounded_rate=1.0)
+    path = ReportWriter(tmp_path).write(report)
+    assert path.exists()
+    assert path.name == "2026-01-01T00-00-00Z-baseline.json"
+    assert Report.model_validate_json(path.read_text(encoding="utf-8")).run_id == report.run_id
+
+
+def test_make_run_id_format():
+    started = datetime(2026, 3, 5, 12, 30, 45, tzinfo=timezone.utc)
+    assert make_run_id("baseline", started) == "2026-03-05T12-30-45Z-baseline"
+
+
+def test_find_matching_prior_report_requires_matching_config(tmp_path):
+    matching = _report("2026-01-01T00-00-00Z-a", graded=1, grounded_rate=0.5)
+    ReportWriter(tmp_path).write(matching)
+
+    different_config = RunConfig(
+        pipeline="whole_doc",
+        answer=RoleReportConfig(provider="openrouter", model="claude-sonnet-5"),
+        judge=RoleReportConfig(provider="anthropic", model="claude-opus-5"),
+        concurrency=5,
+    )
+    assert find_matching_prior_report(tmp_path, different_config) is None
+    found = find_matching_prior_report(tmp_path, BASE_CONFIG)
+    assert found is not None
+    assert found.run_id == matching.run_id
+
+
+def test_compute_delta_is_new_minus_old():
+    previous = _report("2026-01-01T00-00-00Z-a", graded=10, grounded_rate=0.5)
+    current = _report("2026-01-02T00-00-00Z-b", graded=10, grounded_rate=0.8)
+    delta = compute_delta(previous, current)
+    assert delta["grounded_rate"] == pytest.approx(0.3)
+    assert delta["graded"] == 0
+    assert delta["refusal_correct_rate"] is None  # both None -> None, not 0
