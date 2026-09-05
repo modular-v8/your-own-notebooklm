@@ -104,14 +104,18 @@ Nothing else persists. There is no database in this phase.
 
 ## acceptance criteria
 
-- [ ] A clean clone with Python 3.12 available runs the harness after `uv sync` and credential setup, with no further manual steps.
-- [ ] The same gold set runs end to end against all three providers, producing three reports comparable field for field.
-- [ ] Switching provider requires only a configuration or environment change.
-- [ ] A gold set containing one deliberately malformed entry aborts the run before any model call, and names that entry.
-- [ ] A document larger than the context window yields a skipped entry with a stated reason, never a truncated answer.
-- [ ] A "not answerable from this document" entry passes when the model refuses and fails when it answers.
-- [ ] Editing a corpus file after the gold set was authored causes the next run to abort with the filename.
-- [ ] Two runs of identical configuration produce a printed per-metric delta.
-- [ ] A manual review of five judged answers agrees with the LLM judge's verdict on all five.
-- [ ] `uv pip list` contains no `torch`.
-- [ ] A run report contains null retrieval-metric fields, and Phase 1 can populate them without altering the schema.
+- [x] A clean clone with Python 3.12 available runs the harness after `uv sync` and credential setup, with no further manual steps. Verified in practice for `agent_sdk` and `openrouter`; not yet re-verified via a literal fresh `git clone` on a second machine.
+- [ ] The same gold set runs end to end against all three providers, producing three reports comparable field for field. `agent_sdk` verified end to end against all four gold sets; `openrouter` authenticates (`providers check`) but has not run a full `eval run`; `anthropic` untested end to end — no `ANTHROPIC_API_KEY` available this session. **Open for Phase 1 or whenever a key is available.**
+- [x] Switching provider requires only a configuration or environment change.
+- [x] A gold set containing one deliberately malformed entry aborts the run before any model call, and names that entry. Verified against three real, unintentional gold-set/corpus mismatches (see outcome below), not just a synthetic test case.
+- [x] A document larger than the context window yields a skipped entry with a stated reason, never a truncated answer. Unit-tested; not yet exercised with a real over-context document — all four corpus documents fit comfortably in context.
+- [x] A "not answerable from this document" entry passes when the model refuses and fails when it answers. Verified live: 6 not-in-document entries across 4 documents, all correctly refused and correctly judged.
+- [x] Editing a corpus file after the gold set was authored causes the next run to abort with the filename.
+- [x] Two runs of identical configuration produce a printed per-metric delta.
+- [x] A manual review of five judged answers agrees with the LLM judge's verdict on all five. Exceeded: 16+ entries manually reviewed against source text across all four documents.
+- [x] `uv pip list` contains no `torch`.
+- [x] A run report contains null retrieval-metric fields, and Phase 1 can populate them without altering the schema.
+
+## Phase 0 outcome (2026-09-05)
+
+Implemented, tested, and run live against four hand-authored corpus/gold-set pairs (`amg_mct`, `egear`, `smg`, `tiptronic`; 10 entries each). Final baseline: **40/40 entries graded, 100% grounded, 100% refusal-correct**, via the `agent_sdk` provider. See `plan.md`'s "As-built notes" for the two real bugs found and fixed while producing these numbers, and what remains open for Phase 1.
