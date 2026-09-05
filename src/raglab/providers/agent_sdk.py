@@ -18,6 +18,7 @@ from claude_agent_sdk import (
     AssistantMessage,
     ClaudeAgentOptions,
     ClaudeSDKError,
+    ResultMessage,
     TextBlock,
     create_sdk_mcp_server,
 )
@@ -35,6 +36,7 @@ from .base import (
     ToolCallRecord,
     ToolSpec,
     Usage,
+    split_system,
 )
 from .models import resolve
 from .openrouter import CHARS_PER_TOKEN_ESTIMATE
@@ -49,12 +51,24 @@ def is_cli_available() -> bool:
 
 def _flatten(messages: list[Message]) -> str:
     # query() takes one prompt string with no multi-turn history to replay;
-    # a one-shot completion has nothing to reconstruct, so prior turns are
-    # concatenated with role labels instead.
+    # a one-shot completion has nothing to reconstruct, so prior (non-system)
+    # turns are concatenated with role labels instead.
     parts = []
     for m in messages:
         parts.append(m.content if m.role == "user" else f"[{m.role}]\n{m.content}")
     return "\n\n".join(parts)
+
+
+def _usage_from_result(message: ResultMessage) -> Usage:
+    raw = message.usage or {}
+    # Anthropic's usage splits input into three counters (fresh, cache-write,
+    # cache-read) that must be summed for the true total tokens billed.
+    input_tokens = (
+        raw.get("input_tokens", 0)
+        + raw.get("cache_creation_input_tokens", 0)
+        + raw.get("cache_read_input_tokens", 0)
+    )
+    return Usage(input_tokens, raw.get("output_tokens", 0))
 
 
 def _build_tool_server(tools: list[ToolSpec], sink: list[ToolCallRecord]):
@@ -80,15 +94,29 @@ class AgentSDKProvider:
         self.model = self._spec.anthropic_id
         self.context_window = self._spec.context_window
 
-    def _options(self, tools: list[ToolSpec] | None, sink: list[ToolCallRecord]) -> ClaudeAgentOptions:
+    def _options(
+        self, system: str | None, tools: list[ToolSpec] | None, sink: list[ToolCallRecord]
+    ) -> ClaudeAgentOptions:
+        # setting_sources=[] and strict_mcp_config=True keep this call isolated
+        # from the interactive CLI's own defaults: without them, the CLI loads
+        # the user's project/user CLAUDE.md and every globally-configured MCP
+        # server (mail, calendar, ...) as fresh, uncached context on every
+        # single call — tens of thousands of token-cost tokens and real
+        # rate-limit quota for a call that should be a clean, minimal baseline.
+        base = dict(
+            model=self.model,
+            tools=[],
+            system_prompt=system,
+            setting_sources=[],
+            strict_mcp_config=True,
+        )
         if not tools:
-            return ClaudeAgentOptions(model=self.model, tools=[], max_turns=1)
+            return ClaudeAgentOptions(**base, max_turns=1)
 
         server = _build_tool_server(tools, sink)
         allowed = [f"mcp__{TOOL_SERVER_NAME}__{t.name}" for t in tools]
         return ClaudeAgentOptions(
-            model=self.model,
-            tools=[],
+            **base,
             mcp_servers={TOOL_SERVER_NAME: server},
             allowed_tools=allowed,
             max_turns=DEFAULT_TOOL_LOOP_LIMIT,
@@ -101,9 +129,10 @@ class AgentSDKProvider:
         tools: list[ToolSpec] | None = None,
         max_tokens: int = DEFAULT_MAX_TOKENS,  # unused: ClaudeAgentOptions has no output-length cap
     ) -> Completion:
+        system, rest = split_system(messages)
         tool_calls: list[ToolCallRecord] = []
-        options = self._options(tools, tool_calls)
-        prompt = _flatten(messages)
+        options = self._options(system, tools, tool_calls)
+        prompt = _flatten(rest)
         last_text = ""
         stop_reason = "end_turn"
         usage = Usage(0, 0)
@@ -115,11 +144,8 @@ class AgentSDKProvider:
                     if text_blocks:
                         last_text = "".join(text_blocks)
                     stop_reason = message.stop_reason or stop_reason
-                    if message.usage:
-                        usage = Usage(
-                            message.usage.get("input_tokens", 0),
-                            message.usage.get("output_tokens", 0),
-                        )
+                elif isinstance(message, ResultMessage):
+                    usage = _usage_from_result(message)
         except ClaudeSDKError as exc:
             raise ProviderAuthError("agent_sdk", AUTH_HINT) from exc
 
@@ -138,9 +164,10 @@ class AgentSDKProvider:
         tools: list[ToolSpec] | None = None,
         max_tokens: int = DEFAULT_MAX_TOKENS,
     ) -> AsyncIterator[Chunk]:
-        options = self._options(tools, [])
+        system, rest = split_system(messages)
+        options = self._options(system, tools, [])
         options.include_partial_messages = True
-        prompt = _flatten(messages)
+        prompt = _flatten(rest)
 
         try:
             async for message in sdk_query(prompt=prompt, options=options):

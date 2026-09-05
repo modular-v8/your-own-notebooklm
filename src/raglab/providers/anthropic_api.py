@@ -18,14 +18,9 @@ from .base import (
     ToolCallRecord,
     ToolSpec,
     Usage,
+    split_system,
 )
 from .models import resolve
-
-
-def _split_system(messages: list[Message]) -> tuple[str | None, list[Message]]:
-    if messages and messages[0].role == "system":
-        return messages[0].content, messages[1:]
-    return None, messages
 
 
 def _to_api_messages(messages: list[Message]) -> list[dict]:
@@ -65,7 +60,7 @@ class AnthropicProvider:
         tools: list[ToolSpec] | None = None,
         max_tokens: int = DEFAULT_MAX_TOKENS,
     ) -> Completion:
-        system, rest = _split_system(messages)
+        system, rest = split_system(messages)
         api_messages = _to_api_messages(rest)
         tools_by_name = {t.name: t for t in (tools or [])}
         api_tools = _to_api_tools(tools or [])
@@ -130,7 +125,7 @@ class AnthropicProvider:
         tools: list[ToolSpec] | None = None,
         max_tokens: int = DEFAULT_MAX_TOKENS,
     ) -> AsyncIterator[Chunk]:
-        system, rest = _split_system(messages)
+        system, rest = split_system(messages)
         kwargs: dict = {
             "model": self.model,
             "max_tokens": max_tokens,
@@ -150,7 +145,7 @@ class AnthropicProvider:
             raise ProviderAuthError("anthropic", "ANTHROPIC_API_KEY") from exc
 
     async def count_tokens(self, messages: list[Message]) -> int:
-        system, rest = _split_system(messages)
+        system, rest = split_system(messages)
         kwargs: dict = {"model": self.model, "messages": _to_api_messages(rest)}
         if system is not None:
             kwargs["system"] = system

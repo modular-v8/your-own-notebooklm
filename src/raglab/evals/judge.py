@@ -9,8 +9,9 @@ path (marked ungraded, excluded from aggregates) rather than a crash.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 from .goldset import AnswerLocation
 from ..providers.base import LLMProvider, Message
@@ -35,7 +36,9 @@ CANDIDATE ANSWER:
 Judge whether the candidate answer is factually consistent with the expected
 answer and not fabricated beyond what the source location supports.
 
-Respond with ONLY a JSON object, no other text:
+Respond with ONLY a JSON object, no other text. Do not use double-quote
+characters inside the rationale text (use single quotes instead) — it must
+stay valid JSON:
 {{"verdict": "grounded" | "not_grounded", "rationale": "<one sentence>"}}
 """
 
@@ -53,7 +56,9 @@ declines to answer from the document (it may say so explicitly, or express
 that the information isn't present). An incorrect response provides a
 substantive answer anyway, whether or not it happens to be true.
 
-Respond with ONLY a JSON object, no other text:
+Respond with ONLY a JSON object, no other text. Do not use double-quote
+characters inside the rationale text (use single quotes instead) — it must
+stay valid JSON:
 {{"verdict": "refused_correctly" | "refused_incorrectly", "rationale": "<one sentence>"}}
 """
 
@@ -68,7 +73,7 @@ def _format_location(location: AnswerLocation | None) -> str:
     if location is None:
         return "(not applicable)"
     if location.type == "section":
-        return f"section: {location.name}"
+        return f"section: {location.value}"
     return f"{location.type} {location.start}-{location.end}"
 
 
@@ -78,6 +83,31 @@ def _extract_json(text: str) -> str:
         stripped = stripped.strip("`")
         stripped = stripped.removeprefix("json").strip()
     return stripped
+
+
+_VERDICT_FIELD_RE = re.compile(r'"verdict"\s*:\s*"([a-z_]+)"')
+_RATIONALE_FIELD_RE = re.compile(r'"rationale"\s*:\s*"(.*)"\s*\}\s*$', re.DOTALL)
+
+
+def _lenient_parse(text: str) -> dict[str, str] | None:
+    """Best-effort recovery for the one recurring failure mode observed in
+    practice: an otherwise well-formed {"verdict": ..., "rationale": ...}
+    object where the model left a literal, unescaped " inside the rationale
+    (e.g. quoting a phrase), breaking strict JSON parsing. Not a general
+    JSON repair — just enough to recover this specific, common shape."""
+    verdict_match = _VERDICT_FIELD_RE.search(text)
+    if verdict_match is None:
+        return None
+    rationale_match = _RATIONALE_FIELD_RE.search(text)
+    rationale = rationale_match.group(1) if rationale_match else ""
+    return {"verdict": verdict_match.group(1), "rationale": rationale}
+
+
+def _parse_verdict(text: str) -> dict[str, Any] | None:
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return _lenient_parse(text)
 
 
 class Judge:
@@ -105,13 +135,12 @@ class Judge:
 
     async def _judge(self, prompt: str) -> JudgeResult:
         completion = await self.provider.complete([Message(role="user", content=prompt)])
-        try:
-            parsed = json.loads(_extract_json(completion.text))
-            verdict = parsed["verdict"]
-            rationale = str(parsed.get("rationale", ""))
-        except (json.JSONDecodeError, KeyError, TypeError):
+        parsed = _parse_verdict(_extract_json(completion.text))
+        if parsed is None:
             return JudgeResult(verdict=None, rationale=f"unparseable judge output: {completion.text!r}")
 
+        verdict = parsed.get("verdict")
+        rationale = str(parsed.get("rationale", ""))
         if verdict not in VALID_VERDICTS:
             return JudgeResult(verdict=None, rationale=f"invalid verdict {verdict!r}")
         return JudgeResult(verdict=verdict, rationale=rationale)

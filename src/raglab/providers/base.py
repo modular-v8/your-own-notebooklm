@@ -26,6 +26,14 @@ class Message:
     content: str
 
 
+def split_system(messages: list[Message]) -> tuple[str | None, list[Message]]:
+    """Pull a leading system message out, since most SDKs take it as a
+    separate parameter rather than as part of the message list."""
+    if messages and messages[0].role == "system":
+        return messages[0].content, messages[1:]
+    return None, messages
+
+
 ToolHandler = Callable[[dict[str, Any]], Awaitable[dict[str, Any]]]
 
 

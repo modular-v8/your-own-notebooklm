@@ -43,6 +43,18 @@ async def test_invalid_verdict_value_is_ungraded():
 
 
 @pytest.mark.asyncio
+async def test_embedded_unescaped_quote_in_rationale_is_recovered():
+    """The one recurring real-world failure: the model quotes a phrase with a
+    literal " instead of \\", breaking strict JSON but still recoverable."""
+    broken = '{"verdict": "grounded", "rationale": "matches the "rough first attempt" phrasing"}'
+    provider = FakeProvider([text_completion(broken)])
+    judge = Judge(provider)
+    result = await judge.score_groundedness("Q?", "expected", None, "candidate")
+    assert result.verdict == "grounded"
+    assert "rough first attempt" in result.rationale
+
+
+@pytest.mark.asyncio
 async def test_markdown_fenced_json_is_parsed():
     provider = FakeProvider([text_completion('```json\n{"verdict": "grounded", "rationale": "ok"}\n```')])
     judge = Judge(provider)

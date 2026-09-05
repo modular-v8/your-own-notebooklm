@@ -24,15 +24,15 @@ class AnswerLocation(BaseModel):
     type: Literal["line_range", "char_span", "section"]
     start: int | None = None
     end: int | None = None
-    name: str | None = None
+    value: str | None = None
 
     @model_validator(mode="after")
     def check_fields_for_type(self) -> AnswerLocation:
         if self.type in ("line_range", "char_span"):
             if self.start is None or self.end is None:
                 raise ValueError(f"{self.type} requires start and end")
-        elif self.type == "section" and not self.name:
-            raise ValueError("section requires name")
+        elif self.type == "section" and not self.value:
+            raise ValueError("section requires value")
         return self
 
 
