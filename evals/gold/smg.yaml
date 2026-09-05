@@ -1,6 +1,6 @@
 version: 1
 corpus_hashes:
-  smg.md: "sha256:af6147fa3a4cae37f71b0097b6b3523b304f9592207cf4f49f490892fad1b04e"
+  smg.md: "sha256:088bd4fbae73394fbc20e7fc80a7f2976a95c7282111b9008f83b617759d0724"
 
 entries:
   - id: q-001

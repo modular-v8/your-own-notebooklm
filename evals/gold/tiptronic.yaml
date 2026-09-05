@@ -21,7 +21,7 @@ entries:
     question: "Is Tiptronic a specific type of transmission mechanism, or something else?"
     expected_answer: "It's a trademark, not a mechanism. Tiptronic was Porsche's name for an ordinary torque-converter automatic with a manual override gate, and it was even built around two physically different transmissions over time (a ZF unit, then a Mercedes-Benz 722.6) while keeping the same badge — the name describes a way of driving, not a particular set of internals."
     doc: tiptronic.md
-    answer_location: { type: section, value: "A Trademark With Two Dozen Aliases; The Badge Outlived the Box" }
+    answer_location: { type: section, value: ["A Trademark With Two Dozen Aliases", "The Badge Outlived the Box"] }
     tags: [adversarial, factual, synthesis]
 
   - id: q-004

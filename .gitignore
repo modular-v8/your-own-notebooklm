@@ -5,3 +5,4 @@ __pycache__/
 .env
 evals/runs/*
 !evals/runs/.gitkeep
+evals/index/

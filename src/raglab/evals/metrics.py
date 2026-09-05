@@ -1,20 +1,24 @@
 """Pure aggregate computation over a completed run's entries.
 
-Retrieval metrics (recall@k, mrr) are stubbed null here; Phase 1 populates
-them once retrieval exists to measure.
+recall@k is derived from each entry's `recall_hit`; MRR needs the rank of
+the first hit within the retrieved order, which the report schema
+deliberately doesn't carry (see `runner.py`) — so reciprocal ranks are
+passed in separately rather than recomputed from `EntryReport` alone.
 """
 
 from __future__ import annotations
 
 import statistics
 
+from .recall import mrr as compute_mrr
+from .recall import recall_at_k as compute_recall_at_k
 from .report import Aggregates, EntryReport
 
 GROUNDEDNESS_VERDICTS = ("grounded", "not_grounded")
 REFUSAL_VERDICTS = ("refused_correctly", "refused_incorrectly")
 
 
-def compute_aggregates(entries: list[EntryReport]) -> Aggregates:
+def compute_aggregates(entries: list[EntryReport], reciprocal_ranks: list[float] | None = None) -> Aggregates:
     graded = [e for e in entries if e.status == "graded"]
     ungraded = [e for e in entries if e.status == "ungraded"]
     skipped = [e for e in entries if e.status == "skipped"]
@@ -34,6 +38,8 @@ def compute_aggregates(entries: list[EntryReport]) -> Aggregates:
         else None
     )
 
+    recall_hits = [e.recall_hit for e in entries if e.recall_hit is not None]
+
     input_tokens = sum(e.usage.input_tokens for e in entries if e.usage is not None)
     output_tokens = sum(e.usage.output_tokens for e in entries if e.usage is not None)
     latencies = [e.latency_s for e in entries if e.latency_s is not None]
@@ -45,8 +51,8 @@ def compute_aggregates(entries: list[EntryReport]) -> Aggregates:
         ungraded=len(ungraded),
         skipped=len(skipped),
         errored=len(errored),
-        recall_at_k=None,
-        mrr=None,
+        recall_at_k=compute_recall_at_k(recall_hits),
+        mrr=compute_mrr(reciprocal_ranks or []),
         input_tokens=input_tokens,
         output_tokens=output_tokens,
         p50_latency_s=statistics.median(latencies) if latencies else 0.0,

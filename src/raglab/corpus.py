@@ -1,7 +1,10 @@
-"""Corpus loading: plain .txt/.md files, sha256-hashed at load time.
+"""Corpus loading: enumerate source files, sha256-hash their raw bytes.
 
-Hashes are compared against the gold set's recorded values so an edited
-corpus file after gold-set authoring is caught before any model call.
+Hashing source bytes (not extracted text) is what lets a binary format like
+PDF share the same identity mechanism as plain text, and keeps the hash
+independent of parser behavior — parser identity is recorded separately
+(see `parsers/registry.py`) so a parser upgrade is a loud, detectable event
+rather than a silent shift in every downstream character span.
 """
 
 from __future__ import annotations
@@ -10,27 +13,24 @@ import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
-SUPPORTED_SUFFIXES = (".txt", ".md")
+SUPPORTED_SUFFIXES = (".txt", ".md", ".pdf")
 
 
 @dataclass(frozen=True)
 class Document:
     name: str
     path: Path
-    text: str
     sha256: str
 
 
-def hash_text(text: str) -> str:
-    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
-    return f"sha256:{digest}"
+def hash_bytes(data: bytes) -> str:
+    return f"sha256:{hashlib.sha256(data).hexdigest()}"
 
 
 def load_document(path: Path) -> Document:
     if path.suffix not in SUPPORTED_SUFFIXES:
         raise ValueError(f"unsupported corpus file type {path.suffix!r} for {path}")
-    text = path.read_text(encoding="utf-8")
-    return Document(name=path.name, path=path, text=text, sha256=hash_text(text))
+    return Document(name=path.name, path=path, sha256=hash_bytes(path.read_bytes()))
 
 
 def load_corpus(corpus_dir: Path) -> dict[str, Document]:

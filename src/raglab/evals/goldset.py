@@ -24,7 +24,7 @@ class AnswerLocation(BaseModel):
     type: Literal["line_range", "char_span", "section"]
     start: int | None = None
     end: int | None = None
-    value: str | None = None
+    value: list[str] | None = None
 
     @model_validator(mode="after")
     def check_fields_for_type(self) -> AnswerLocation:

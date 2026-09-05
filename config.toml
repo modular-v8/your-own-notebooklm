@@ -20,3 +20,11 @@ model = "claude-opus-5"
 
 [run]
 concurrency = 5
+
+[retrieval]
+# top_k: chunks handed to the model per question.
+# score_threshold: below this, the retrieval pipeline refuses rather than
+# answering from an empty context -- a safety net, not a tuned value; the
+# answer model already refuses correctly on its own (100% in Phase 0).
+top_k = 5
+score_threshold = 0.35

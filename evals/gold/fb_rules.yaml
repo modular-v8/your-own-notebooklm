@@ -1,0 +1,82 @@
+version: 1
+corpus_hashes:
+  fb_rules.pdf: "sha256:971813fd51ef91877761f48522bbf337d11f36cfba6f2acd579720d4a8cae277"
+
+entries:
+  - id: q-001
+    question: "What is the minimum age for a Formula Bharat team member?"
+    expected_answer: "16 years of age."
+    doc: fb_rules.pdf
+    # p.23
+    answer_location: { type: section, value: ["A4.4.1"] }
+    tags: [factual, direct-lookup]
+
+  - id: q-002
+    question: "Is being 16 years old enough on its own to allow a team member to drive the competition vehicle?"
+    expected_answer: "No. Being at least 16 satisfies the general team-member age requirement, but anyone who will actually drive the vehicle during a competition must additionally present a valid, government-issued driver's license for passenger cars that includes a photograph."
+    doc: fb_rules.pdf
+    # p.23
+    answer_location: { type: section, value: ["A4.4.1", "A4.5.1"] }
+    tags: [adversarial, synthesis]
+
+  - id: q-003
+    question: "How much is the fee that designated drivers must pay when they sign the bond at competition registration?"
+    expected_answer: null
+    doc: fb_rules.pdf
+    answer_location: null
+    tags: [not-in-document, in-document-deferred]
+
+  - id: q-004
+    question: "What must the shutdown circuit consist of on a combustion-powered (CV) vehicle, versus an electric (EV) vehicle?"
+    expected_answer: "On a CV, the shutdown circuit is a series connection of at least the LVMS, the BSPD, three shutdown buttons, the BOTS, and the inertia switch. On an EV, it is a series connection of at least two master switches, three shutdown buttons, the BOTS, the IMD, the inertia switch, the BSPD, all required interlocks, and the AMS — a longer chain than the CV version, reflecting the extra tractive-system components."
+    doc: fb_rules.pdf
+    # CV4.1.2 p.86, EV6.1.2 p.101
+    answer_location: { type: section, value: ["CV4.1.2", "EV6.1.2"] }
+    tags: [synthesis, near-duplicate-rules]
+
+  - id: q-005
+    question: "Does the shutdown circuit requirement for an EV include an LVMS, the same way the CV shutdown circuit does?"
+    expected_answer: "No. The CV shutdown circuit definition explicitly includes the LVMS. The EV shutdown circuit definition does not list the LVMS at all — instead it requires at least two master switches, the IMD, and the AMS in addition to components both circuits share, like the BOTS, the inertia switch, and the BSPD."
+    doc: fb_rules.pdf
+    # CV4.1.2 p.86, EV6.1.2 p.101
+    answer_location: { type: section, value: ["CV4.1.2", "EV6.1.2"] }
+    tags: [adversarial, near-duplicate-rules]
+
+  - id: q-006
+    question: "What is the minimum diameter for the shutdown buttons mounted on the sides of the vehicle, and does the cockpit-mounted shutdown button share that same minimum?"
+    expected_answer: "The side-mounted shutdown buttons have a minimum allowed diameter of 40 mm. The cockpit-mounted shutdown button has a smaller minimum diameter of 24 mm, so the two thresholds are not the same."
+    doc: fb_rules.pdf
+    # p.70
+    answer_location: { type: section, value: ["T11.4.3", "T11.4.4"] }
+    tags: [numeric, near-duplicate-rules]
+
+  - id: q-007
+    question: "What are the minimum dimensions the Impact Attenuator (IA) must satisfy in front of the front bulkhead?"
+    expected_answer: "The IA must be at least 100 mm high and 200 mm wide for a minimum distance of 200 mm forward of the front bulkhead, and no part of that required 100 x 200 x 200 mm³ volume can sit more than 350 mm above the ground."
+    doc: fb_rules.pdf
+    # p.52
+    answer_location: { type: section, value: ["T3.17.2"] }
+    tags: [factual, numeric]
+
+  - id: q-008
+    question: "How far apart must the shoulder harness mounting points be?"
+    expected_answer: "Between 180 mm and 230 mm apart, measured center to center."
+    doc: fb_rules.pdf
+    # p.61
+    answer_location: { type: section, value: ["T5.5.4"] }
+    tags: [factual, direct-lookup]
+
+  - id: q-009
+    question: "Is the Brake Over-Travel Switch (BOTS) an electronic sensor, or something else, and can the driver reset it once it has actuated?"
+    expected_answer: "The BOTS must be a mechanical switch — push-pull, push-rotate, or flip type — not an electronic sensor, and it may consist of a series connection of switches. It must be designed so the driver cannot reset it, and repeated actuation must not close the shutdown circuit again."
+    doc: fb_rules.pdf
+    # p.63
+    answer_location: { type: section, value: ["T6.2.2", "T6.2.3"] }
+    tags: [adversarial, synthesis]
+
+  - id: q-010
+    question: "What is the entry fee for a team to register for the Formula Bharat competition?"
+    expected_answer: null
+    doc: fb_rules.pdf
+    answer_location: null
+    tags: [not-in-document]

@@ -135,10 +135,18 @@ DELTA_METRICS = (
     "ungraded",
     "skipped",
     "errored",
+    "recall_at_k",
+    "mrr",
     "input_tokens",
     "output_tokens",
     "p50_latency_s",
 )
+
+
+def _input_tokens_per_question(report: Report) -> float | None:
+    if report.gold_set.entry_count == 0:
+        return None
+    return report.aggregates.input_tokens / report.gold_set.entry_count
 
 
 def compute_delta(previous: Report, current: Report) -> dict[str, float | None]:
@@ -147,4 +155,8 @@ def compute_delta(previous: Report, current: Report) -> dict[str, float | None]:
         old_value = getattr(previous.aggregates, field_name)
         new_value = getattr(current.aggregates, field_name)
         delta[field_name] = None if old_value is None or new_value is None else new_value - old_value
+
+    old_tpq = _input_tokens_per_question(previous)
+    new_tpq = _input_tokens_per_question(current)
+    delta["input_tokens_per_question"] = None if old_tpq is None or new_tpq is None else new_tpq - old_tpq
     return delta

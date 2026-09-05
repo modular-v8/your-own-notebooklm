@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from raglab.corpus import Document, hash_text
+from raglab.corpus import Document, hash_bytes
 from raglab.evals.goldset import CorpusMismatchError, GoldSetError, load_gold_set, verify_corpus_hashes
 
 
@@ -18,7 +18,7 @@ def _write(tmp_path: Path, content: str) -> Path:
 
 
 def test_valid_gold_set_loads(tmp_path):
-    doc_hash = hash_text("hello world")
+    doc_hash = hash_bytes(b"hello world")
     gold = load_gold_set(
         _write(
             tmp_path,
@@ -141,9 +141,7 @@ def test_corpus_hash_mismatch_names_file(tmp_path):
         )
     )
     documents = {
-        "doc.md": Document(
-            name="doc.md", path=tmp_path / "doc.md", text="hello world", sha256=hash_text("hello world")
-        )
+        "doc.md": Document(name="doc.md", path=tmp_path / "doc.md", sha256=hash_bytes(b"hello world"))
     }
     with pytest.raises(CorpusMismatchError) as exc_info:
         verify_corpus_hashes(gold, documents)
@@ -151,7 +149,7 @@ def test_corpus_hash_mismatch_names_file(tmp_path):
 
 
 def test_corpus_missing_file_named(tmp_path):
-    doc_hash = hash_text("hello world")
+    doc_hash = hash_bytes(b"hello world")
     gold = load_gold_set(
         _write(
             tmp_path,

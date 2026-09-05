@@ -19,6 +19,8 @@ DEFAULT_CONFIG_PATH = Path("config.toml")
 DEFAULT_CONCURRENCY = 5
 DEFAULT_ANSWER_MODEL = "claude-sonnet-5"
 DEFAULT_JUDGE_MODEL = "claude-opus-5"
+DEFAULT_TOP_K = 5
+DEFAULT_SCORE_THRESHOLD = 0.35
 
 
 @dataclass(frozen=True)
@@ -28,10 +30,17 @@ class RoleConfig:
 
 
 @dataclass(frozen=True)
+class RetrievalConfig:
+    top_k: int
+    score_threshold: float
+
+
+@dataclass(frozen=True)
 class RagLabConfig:
     answer: RoleConfig
     judge: RoleConfig
     concurrency: int
+    retrieval: RetrievalConfig
 
     @classmethod
     def load(cls, path: Path = DEFAULT_CONFIG_PATH) -> RagLabConfig:
@@ -60,4 +69,10 @@ class RagLabConfig:
 
         concurrency = int(raw.get("run", {}).get("concurrency", DEFAULT_CONCURRENCY))
 
-        return cls(answer=answer, judge=judge, concurrency=concurrency)
+        retrieval_raw = raw.get("retrieval", {})
+        retrieval = RetrievalConfig(
+            top_k=int(retrieval_raw.get("top_k", DEFAULT_TOP_K)),
+            score_threshold=float(retrieval_raw.get("score_threshold", DEFAULT_SCORE_THRESHOLD)),
+        )
+
+        return cls(answer=answer, judge=judge, concurrency=concurrency, retrieval=retrieval)
