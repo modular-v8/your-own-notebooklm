@@ -48,7 +48,7 @@ LLMProvider (Protocol)
 ├── count_tokens(messages)         -> int
 └── context_window                 -> int
 
-  ├── AgentSDKProvider    claude-agent-sdk, subscription credential, no key
+  ├── AGENTDKProvider    claude-agent-sdk, subscription credential, no key
   ├── AnthropicProvider   anthropic AsyncAnthropic, ANTHROPIC_API_KEY
   └── OpenRouterProvider  openai AsyncOpenAI @ OpenRouter base_url
 ```
@@ -161,7 +161,7 @@ entries:
 
 ```
 rag-learning/
-├── AGENTS.md                      # coding-agent conventions; reloaded each session
+├── AGENT.md                      # coding-agent conventions; reloaded each session
 ├── DESIGN.md                      # governs later UI phases; unused here
 ├── README.md
 ├── pyproject.toml                 # uv; requires-python = "==3.12.*"
@@ -213,7 +213,7 @@ rag-learning/
 
 **Package name `raglab` is confirmed** and settled here rather than left open, since renaming after Slice 1 would touch every import in the project.
 
-`AGENTS.md` sits at the repository root alongside `DESIGN.md`, and the two divide the work cleanly: `DESIGN.md` governs what the UI looks like in later phases, `AGENTS.md` governs how code gets written in all of them — naming, no magic numbers, comment density, what not to touch. Both are reloaded at the start of each session rather than assumed to be remembered.
+`AGENT.md` sits at the repository root alongside `DESIGN.md`, and the two divide the work cleanly: `DESIGN.md` governs what the UI looks like in later phases, `AGENT.md` governs how code gets written in all of them — naming, no magic numbers, comment density, what not to touch. Both are reloaded at the start of each session rather than assumed to be remembered.
 
 ## As-built notes (handover to Phase 1)
 
@@ -221,7 +221,7 @@ Written after implementation and a first live run against four real corpus/gold-
 
 **Two real bugs found and fixed while producing that number:**
 
-- **`AgentSDKProvider` was not making a clean, minimal call.** Leaving `ClaudeAgentOptions` at its defaults inherits the interactive CLI's full system prompt *and* every globally-configured MCP server (mail, calendar, ...), costing ~34,400 tokens of `cache_creation_input_tokens` per call instead of the ~770-token baseline a stripped-down call actually needs — a ~44x overhead, and real 5-hour rate-limit quota, not sandboxed test cost. Fixed with `setting_sources=[]` and `strict_mcp_config=True`, plus reading usage from `ResultMessage` (summed across `input_tokens` + `cache_creation_input_tokens` + `cache_read_input_tokens`) instead of a stale `AssistantMessage` field that was undercounting by two orders of magnitude. **Residual, accepted cost**: even fully isolated, each `agent_sdk` call still carries a fixed ~770-token CLI protocol tax absent from a raw Anthropic API call — a structural property of the subscription-auth path, not a bug. Phase 4's cross-provider cost comparisons should account for this rather than reading it as `agent_sdk` being cheaper or more expensive per se.
+- **`AGENTDKProvider` was not making a clean, minimal call.** Leaving `ClaudeAgentOptions` at its defaults inherits the interactive CLI's full system prompt *and* every globally-configured MCP server (mail, calendar, ...), costing ~34,400 tokens of `cache_creation_input_tokens` per call instead of the ~770-token baseline a stripped-down call actually needs — a ~44x overhead, and real 5-hour rate-limit quota, not sandboxed test cost. Fixed with `setting_sources=[]` and `strict_mcp_config=True`, plus reading usage from `ResultMessage` (summed across `input_tokens` + `cache_creation_input_tokens` + `cache_read_input_tokens`) instead of a stale `AssistantMessage` field that was undercounting by two orders of magnitude. **Residual, accepted cost**: even fully isolated, each `agent_sdk` call still carries a fixed ~770-token CLI protocol tax absent from a raw Anthropic API call — a structural property of the subscription-auth path, not a bug. Phase 4's cross-provider cost comparisons should account for this rather than reading it as `agent_sdk` being cheaper or more expensive per se.
 - **The judge's strict-prompt JSON broke intermittently (~10-20% of calls)** on a literal, unescaped `"` inside the rationale text (e.g. quoting a phrase from the source). Every case manually checked was a real `grounded`/`refused_correctly` verdict lost to formatting, not a genuine judge disagreement. Fixed with an explicit prompt instruction plus a narrow regex-based recovery for that one specific shape (not a general JSON repairer) — brought the observed failure rate to 0 across all four re-runs. This is the residual fragility of deferring true structured/tool-forced judge output (see tech-stack table); if it recurs at scale in Phase 4's larger run volumes, that deferred work is where to look first.
 
 **One real judge miscalibration observed and self-corrected**: the first `amg_mct` run had the judge mark a genuinely grounded answer `not_grounded`, reasoning that supporting detail was "unsupported" when it was in fact present in the same cited paragraph. Manual review caught it; the re-run (after the bug fixes above, same question, same document) judged it correctly. Recorded here as a live example of exactly the failure mode `spec.md`'s manual-spot-check requirement exists to catch — LLM-as-judge is not perfect, and won't be in later phases either.

@@ -24,6 +24,8 @@ Instructions for any AI coding agent working in this repository. Humans wanting 
   5. Imperative mood ("Fix bug," "Add feature," not "Fixed" or "Adds"). Test: it completes "If applied, this commit will ___."
   6. Wrap the body manually at 72 characters.
   7. Use the body to explain what and why, not how — the code explains how.
+- When writing or editing the [README.md](README.md), keep it free from overly technical details. Readme is user-facing and anyone looking at it for the first time should have a brief idea of what the tool does, how it works (briefly), and of course the setup and usage commands.
+- Review and update spec and plan files periodically after completion of major milestones.
 
 ## Tool Specific Rules
 
