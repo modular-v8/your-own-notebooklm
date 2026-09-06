@@ -38,6 +38,21 @@ class GoldSetRef(BaseModel):
     entry_count: int
 
 
+class TagAggregates(BaseModel):
+    """Same rates as Aggregates, computed over just the entries carrying
+    one particular gold-set tag. mrr is a ranking metric, not a rate, and
+    isn't broken down per-tag (see plan.md's data model)."""
+
+    count: int
+    grounded_rate: float | None = None
+    refusal_correct_rate: float | None = None
+    recall_at_k: float | None = None
+    citation_precision: float | None = None
+    fabrication_rate: float | None = None
+    mean_coverage: float | None = None
+    uncited: int = 0
+
+
 class Aggregates(BaseModel):
     grounded_rate: float | None
     refusal_correct_rate: float | None
@@ -50,6 +65,11 @@ class Aggregates(BaseModel):
     input_tokens: int
     output_tokens: int
     p50_latency_s: float
+    citation_precision: float | None = None
+    fabrication_rate: float | None = None
+    mean_coverage: float | None = None
+    uncited: int = 0
+    by_tag: dict[str, TagAggregates] = {}
 
 
 class UsageReport(BaseModel):
@@ -69,6 +89,10 @@ class EntryReport(BaseModel):
     usage: UsageReport | None = None
     latency_s: float | None = None
     error: str | None = None
+    cited: list[str] | None = None
+    fabricated: list[str] | None = None
+    citation_precision: float | None = None
+    coverage: float | None = None
 
 
 class Report(BaseModel):
@@ -140,6 +164,9 @@ DELTA_METRICS = (
     "input_tokens",
     "output_tokens",
     "p50_latency_s",
+    "citation_precision",
+    "fabrication_rate",
+    "mean_coverage",
 )
 
 

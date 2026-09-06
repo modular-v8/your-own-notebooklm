@@ -12,7 +12,7 @@ from tests.fakes import FakeProvider, text_completion
 async def test_groundedness_verdict_parses():
     provider = FakeProvider([text_completion('{"verdict": "grounded", "rationale": "matches"}')])
     judge = Judge(provider)
-    result = await judge.score_groundedness("Q?", "expected", None, "candidate")
+    result = await judge.score_groundedness("Q?", "expected", [], "candidate")
     assert result.verdict == "grounded"
     assert result.rationale == "matches"
 
@@ -29,7 +29,7 @@ async def test_refusal_verdict_parses():
 async def test_unparseable_output_is_ungraded():
     provider = FakeProvider([text_completion("not json at all")])
     judge = Judge(provider)
-    result = await judge.score_groundedness("Q?", "expected", None, "candidate")
+    result = await judge.score_groundedness("Q?", "expected", [], "candidate")
     assert result.verdict is None
     assert "unparseable" in result.rationale
 
@@ -38,7 +38,7 @@ async def test_unparseable_output_is_ungraded():
 async def test_invalid_verdict_value_is_ungraded():
     provider = FakeProvider([text_completion('{"verdict": "maybe", "rationale": "unsure"}')])
     judge = Judge(provider)
-    result = await judge.score_groundedness("Q?", "expected", None, "candidate")
+    result = await judge.score_groundedness("Q?", "expected", [], "candidate")
     assert result.verdict is None
 
 
@@ -49,7 +49,7 @@ async def test_embedded_unescaped_quote_in_rationale_is_recovered():
     broken = '{"verdict": "grounded", "rationale": "matches the "rough first attempt" phrasing"}'
     provider = FakeProvider([text_completion(broken)])
     judge = Judge(provider)
-    result = await judge.score_groundedness("Q?", "expected", None, "candidate")
+    result = await judge.score_groundedness("Q?", "expected", [], "candidate")
     assert result.verdict == "grounded"
     assert "rough first attempt" in result.rationale
 
@@ -58,5 +58,5 @@ async def test_embedded_unescaped_quote_in_rationale_is_recovered():
 async def test_markdown_fenced_json_is_parsed():
     provider = FakeProvider([text_completion('```json\n{"verdict": "grounded", "rationale": "ok"}\n```')])
     judge = Judge(provider)
-    result = await judge.score_groundedness("Q?", "expected", None, "candidate")
+    result = await judge.score_groundedness("Q?", "expected", [], "candidate")
     assert result.verdict == "grounded"

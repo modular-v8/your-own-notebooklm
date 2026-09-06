@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import time
 
+from ..evals.citations import parse_citations, strip_citations_block
 from ..providers.base import LLMProvider, Message, Usage
 from ..retrieval.retriever import RetrievedChunk, Retriever
 from .base import PipelineResult, Query
@@ -20,7 +21,13 @@ SYSTEM_PROMPT = (
     "You answer questions using ONLY the retrieved excerpts provided below. "
     "If the excerpts do not contain the answer, say plainly that you cannot "
     "answer from the provided material — do not guess or use outside "
-    "knowledge. Cite the excerpt your answer relies on."
+    "knowledge. "
+    "After your answer, on its own line, list the chunk ids of every excerpt "
+    "you actually relied on inside a <citations> block, comma-separated — "
+    "for example <citations>fb_rules.pdf:0042, fb_rules.pdf:0043</citations>. "
+    "If you relied on none (for example, because you are declining to "
+    "answer), write <citations></citations>. Use exactly the chunk ids shown "
+    "in brackets before each excerpt below; do not invent ids."
 )
 
 # A refusal produced here costs no model call — there's nothing relevant to
@@ -75,11 +82,15 @@ class RetrievalPipeline:
         completion = await self.provider.complete(messages)
         latency_s = time.perf_counter() - start
 
+        cited = parse_citations(completion.text)
+        answer_text = strip_citations_block(completion.text) if cited is not None else completion.text
+
         return PipelineResult(
-            answer=completion.text,
+            answer=answer_text,
             stop_reason=completion.stop_reason,
             usage=completion.usage,
             latency_s=latency_s,
             request_params=completion.request_params,
             retrieved=[c.chunk_id for c in relevant],
+            cited=cited,
         )

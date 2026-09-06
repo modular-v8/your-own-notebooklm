@@ -12,10 +12,17 @@ from dotenv import load_dotenv
 
 from .config import RagLabConfig
 from .corpus import load_corpus
-from .evals.goldset import CorpusMismatchError, GoldSet, GoldSetError, load_gold_set, verify_corpus_hashes
+from .evals.goldset import (
+    CorpusMismatchError,
+    GoldSet,
+    GoldSetError,
+    check_tag_vocabulary,
+    load_gold_set,
+    verify_corpus_hashes,
+)
 from .evals.judge import Judge
-from .evals.locations import CharSpan, line_of_offset, resolve_gold_locations
-from .evals.metrics import compute_aggregates
+from .evals.locations import CharSpan, GoldSpan, find_matches, line_of_offset, resolve_gold_locations
+from .evals.metrics import compute_aggregates, find_disagreements
 from .evals.report import (
     GoldSetRef,
     Report,
@@ -106,7 +113,7 @@ def _load_verified_gold_set(gold_path: Path, corpus_dir: Path):
 
 def _extract_referenced_documents(gold: GoldSet, documents: dict) -> dict[str, ExtractedDocument]:
     extracted: dict[str, ExtractedDocument] = {}
-    for doc_name in sorted({entry.doc for entry in gold.entries}):
+    for doc_name in sorted({doc for entry in gold.entries for doc in entry.docs}):
         document = documents.get(doc_name)
         if document is None:
             typer.echo(f"Corpus missing document {doc_name!r} referenced by gold set", err=True)
@@ -119,7 +126,7 @@ def _extract_referenced_documents(gold: GoldSet, documents: dict) -> dict[str, E
     return extracted
 
 
-def _check_gold_locations(gold: GoldSet, extracted: dict[str, ExtractedDocument]) -> dict[str, list[CharSpan]]:
+def _check_gold_locations(gold: GoldSet, extracted: dict[str, ExtractedDocument]) -> dict[str, list[GoldSpan]]:
     """Strict: used by `gold validate`, a dedicated gold-set linting command."""
     gold_spans, errors = resolve_gold_locations(gold, extracted)
     if errors:
@@ -132,7 +139,7 @@ def _check_gold_locations(gold: GoldSet, extracted: dict[str, ExtractedDocument]
 
 def _resolve_gold_locations_for_run(
     gold: GoldSet, extracted: dict[str, ExtractedDocument]
-) -> dict[str, list[CharSpan]]:
+) -> dict[str, list[GoldSpan]]:
     """Lenient: used by `eval run`. An unresolvable location makes that one
     entry unscoreable for recall/MRR (reported, before any model call) but
     doesn't block answering and grading the rest of the gold set — the
@@ -156,7 +163,49 @@ def gold_validate(
     gold, documents = _load_verified_gold_set(gold_path, corpus_dir)
     extracted = _extract_referenced_documents(gold, documents)
     _check_gold_locations(gold, extracted)
+
+    tag_warnings = check_tag_vocabulary(gold)
+    for warning in tag_warnings:
+        typer.echo(f"Warning: {warning}")
+
     typer.echo(f"OK: {len(gold.entries)} entries, {len(gold.corpus_hashes)} corpus documents verified.")
+
+
+@gold_app.command("locate")
+def gold_locate(
+    anchor: str = typer.Argument(..., help="Anchor text to search for (rule id, heading, etc.)"),
+    doc: str | None = typer.Option(None, "--doc", help="Restrict the search to one corpus document"),
+    corpus_dir: Path = typer.Option(DEFAULT_CORPUS_DIR, help="Directory of corpus documents"),
+) -> None:
+    """Print every match of an anchor with its line number, marking which
+    (if any) begins a line — the same boundary rule `section` anchors use.
+    Makes no model call."""
+    documents = load_corpus(corpus_dir)
+    doc_names = [doc] if doc else sorted(documents)
+
+    total_matches = 0
+    for doc_name in doc_names:
+        document = documents.get(doc_name)
+        if document is None:
+            typer.echo(f"{doc_name}: not found in {corpus_dir}", err=True)
+            raise typer.Exit(code=1)
+        try:
+            extracted = extract_document(document)
+        except ParserError as exc:
+            typer.echo(f"{doc_name}: parser failed ({exc})", err=True)
+            continue
+
+        matches = find_matches(extracted.text, anchor)
+        if not matches:
+            continue
+        typer.echo(f"{doc_name}:")
+        for match in matches:
+            marker = "line-initial" if match.line_initial else "mid-sentence"
+            typer.echo(f"  line {match.line} [{marker}]: {match.snippet}")
+        total_matches += len(matches)
+
+    if total_matches == 0:
+        typer.echo(f"No matches for {anchor!r}.")
 
 
 @app.command("index")
@@ -242,6 +291,10 @@ def search(
         typer.echo(f"   {preview}")
 
 
+def _fmt_pct(value: float | None) -> str:
+    return f"{value:.2%}" if value is not None else "n/a"
+
+
 def _print_delta(previous: Report, current: Report) -> None:
     delta = compute_delta(previous, current)
     typer.echo(f"Delta vs {previous.run_id}:")
@@ -285,7 +338,7 @@ def eval_run(
             raise typer.Exit(code=1)
 
         manifest = store.load_manifest()
-        referenced_docs = {entry.doc for entry in gold.entries}
+        referenced_docs = {doc for entry in gold.entries for doc in entry.docs}
         missing = sorted(referenced_docs - set(manifest.documents))
         if missing:
             typer.echo(f"Index missing document(s): {', '.join(missing)}. Run `raglab index`.", err=True)
@@ -341,7 +394,8 @@ def eval_run(
     duration_s = time.perf_counter() - start_perf
 
     entries = run_result.entries
-    aggregates = compute_aggregates(entries, run_result.reciprocal_ranks)
+    tags_by_id = {entry.id: entry.tags for entry in gold.entries}
+    aggregates = compute_aggregates(entries, run_result.reciprocal_ranks, tags_by_id)
     report = Report(
         run_id=make_run_id(name, started_at),
         started_at=started_at.isoformat(),
@@ -366,10 +420,28 @@ def eval_run(
         typer.echo(f"refusal_correct_rate={aggregates.refusal_correct_rate:.2%}")
     if aggregates.recall_at_k is not None:
         typer.echo(f"recall_at_k={aggregates.recall_at_k:.2%} mrr={aggregates.mrr:.4f}")
+    if aggregates.citation_precision is not None or aggregates.fabrication_rate is not None:
+        typer.echo(
+            f"citation_precision={_fmt_pct(aggregates.citation_precision)} "
+            f"fabrication_rate={_fmt_pct(aggregates.fabrication_rate)} "
+            f"mean_coverage={_fmt_pct(aggregates.mean_coverage)} uncited={aggregates.uncited}"
+        )
     typer.echo(
         f"input_tokens={aggregates.input_tokens} output_tokens={aggregates.output_tokens} "
         f"p50_latency_s={aggregates.p50_latency_s:.2f}"
     )
+
+    if aggregates.by_tag:
+        typer.echo("By tag:")
+        for tag, tag_agg in aggregates.by_tag.items():
+            typer.echo(
+                f"  {tag} (n={tag_agg.count}): grounded={_fmt_pct(tag_agg.grounded_rate)} "
+                f"refusal_correct={_fmt_pct(tag_agg.refusal_correct_rate)} "
+                f"recall_at_k={_fmt_pct(tag_agg.recall_at_k)} "
+                f"citation_precision={_fmt_pct(tag_agg.citation_precision)} "
+                f"fabrication_rate={_fmt_pct(tag_agg.fabrication_rate)} "
+                f"mean_coverage={_fmt_pct(tag_agg.mean_coverage)}"
+            )
 
     failed = [
         e.id
@@ -378,6 +450,11 @@ def eval_run(
     ]
     if failed:
         typer.echo(f"Failed entries: {', '.join(failed)}")
+
+    disagreements = find_disagreements(entries)
+    typer.echo(f"Disagreements (judge vs. deterministic citation check): {len(disagreements)}")
+    for entry in disagreements:
+        typer.echo(f"  {entry.id}: judge={entry.verdict} citation_precision={entry.citation_precision:.2f}")
 
     if previous_report is not None:
         _print_delta(previous_report, report)

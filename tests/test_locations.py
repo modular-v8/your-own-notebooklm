@@ -98,7 +98,11 @@ def test_section_no_match_is_unscoreable():
 
 
 def test_section_ambiguous_match_is_unscoreable():
-    text = "General note.\n\nA1.1 First mention.\n\nSee also A1.1 again here.\n"
+    """Two genuinely line-initial occurrences remain ambiguous without an
+    `occurrence` selector (see test_locations_occurrence.py for the
+    mid-sentence-reference case, which the line-initial filter resolves
+    instead of flagging as ambiguous)."""
+    text = "General note.\n\nA1.1 First mention.\n\nA1.1 Second, also line-initial.\n"
     loc = AnswerLocation(type="section", value=["A1.1"])
     with pytest.raises(ValueError, match="ambiguous"):
         resolve_answer_location(loc, text)

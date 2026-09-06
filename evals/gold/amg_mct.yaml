@@ -1,74 +1,138 @@
-version: 1
+version: 2
 corpus_hashes:
-  amg_mct.md: "sha256:4fc1ee447eb2c91a1d8d342c159d691513404558c11556c089d9c06ff25a6c7d"
-
+  amg_mct.md: sha256:4fc1ee447eb2c91a1d8d342c159d691513404558c11556c089d9c06ff25a6c7d
 entries:
-  - id: q-001
-    question: "What did AMG replace the torque converter with in the SpeedShift MCT, and when and in what car did it debut?"
-    expected_answer: "AMG replaced the torque converter and its lock-up clutch with a single compact wet start-off clutch (Nass-Anfahrkupplung, or NAK). It debuted in 2008 in the R230 SL 63 AMG."
-    doc: amg_mct.md
-    answer_location: { type: line_range, start: 17, end: 17 }
-    tags: [factual, direct-lookup]
-
-  - id: q-002
-    question: "What is the fastest shift time quoted for the AMG SpeedShift MCT?"
-    expected_answer: "As low as 100 milliseconds (0.1 seconds), depending on drive mode."
-    doc: amg_mct.md
-    answer_location: { type: line_range, start: 31, end: 31 }
-    tags: [factual, direct-lookup]
-
-  - id: q-003
-    question: "The document gives two different inertia-related percentage figures for the MCT. What are they, and what does each one refer to?"
-    expected_answer: "The start-off clutch itself has around 60% lower rotational inertia than a fluid-filled torque converter. Separately, the inertia of all the rotating parts of the transmission as a whole was cut by about 30% compared to AMG's torque-converter 7G-Tronic."
-    doc: amg_mct.md
-    answer_location: { type: line_range, start: 23, end: 23 }
-    tags: [synthesis, easily-conflated]
-
-  - id: q-004
-    question: "Is a DCT always faster than the MCT, or does it depend on the type of shift?"
-    expected_answer: "It depends. For a sequential change with the next gear pre-selected, a DCT shifts in roughly 50 ms, faster than the MCT's ~100 ms, and wins on a track where shifts are predictable. But for an out-of-sequence, multi-gear downshift, a DCT slows down while the MCT shifts it just as fast as a single-gear change — which is why some owners prefer the MCT on the road."
-    doc: amg_mct.md
-    answer_location: { type: line_range, start: 46, end: 47 }
-    tags: [synthesis, conditional]
-
-  - id: q-005
-    question: "Does the \"Multi-Clutch\" in AMG SpeedShift MCT refer to the transmission having two clutches like a dual-clutch gearbox?"
-    expected_answer: "No. The MCT has a single input shaft and a single multi-plate wet clutch handling what the torque converter used to do. \"Multi-Clutch\" instead refers to the multiple internal clutches and brakes of the planetary gearset that the standard 722.9 torque-converter gearbox already used to select its seven gears."
-    doc: amg_mct.md
-    answer_location: { type: line_range, start: 19, end: 19 }
-    tags: [adversarial, factual]
-
-  - id: q-006
-    question: "What torque figure is the 9-speed MCT rated to handle?"
-    expected_answer: "Around 900 N·m."
-    doc: amg_mct.md
-    answer_location: { type: line_range, start: 56, end: 56 }
-    tags: [factual, buried-detail]
-
-  - id: q-007
-    question: "What three special functions does the document describe as the MCT's 'party tricks'?"
-    expected_answer: "Automatic double-declutch rev-matching downshifts (Zwischengas), multiple-gear downshifts in a single move (e.g. skipping from 7th straight to 4th), and RaceStart, a launch-control function coordinated by the AMG DRIVE UNIT controller."
-    doc: amg_mct.md
-    answer_location: { type: line_range, start: 38, end: 40 }
-    tags: [factual, list-lookup]
-
-  - id: q-008
-    question: "Why does servicing the MCT differ from servicing a standard 722.9 / 7G-Tronic when it comes to draining the transmission fluid?"
-    expected_answer: "On a normal 722.9 / 7G-Tronic, fluid is trapped inside the torque converter and needs its own separate drain step. Because the MCT has no torque converter, effectively all of its fluid drains through the main plug instead."
-    doc: amg_mct.md
-    answer_location: { type: line_range, start: 52, end: 52 }
-    tags: [synthesis]
-
-  - id: q-009
-    question: "Was the original 2005 AMG SpeedShift a torque-converter transmission or the wet-clutch MCT design?"
-    expected_answer: "It was a torque-converter transmission. The 2005 AMG SpeedShift on the SLK 55 AMG was a performance-tuned version of the 7-speed 7G-Tronic (722.9 family) and still used a torque converter; that performance torque-converter version was later branded SpeedShift TCT / 7G-Tronic Sport. The wet-clutch MCT design did not appear until 2008."
-    doc: amg_mct.md
-    answer_location: { type: line_range, start: 11, end: 11 }
-    tags: [buried-detail, easily-conflated]
-
-  - id: q-010
-    question: "What 0-60 mph acceleration time does the document report for the R230 SL 63 AMG?"
-    expected_answer: null
-    doc: amg_mct.md
-    answer_location: null
-    tags: [not-in-document]
+- id: q-001
+  question: What did AMG replace the torque converter with in the SpeedShift MCT, and when and in what
+    car did it debut?
+  expected_answer: AMG replaced the torque converter and its lock-up clutch with a single compact wet
+    start-off clutch (Nass-Anfahrkupplung, or NAK). It debuted in 2008 in the R230 SL 63 AMG.
+  sources:
+  - doc: amg_mct.md
+    answer_location:
+      type: line_range
+      start: 17
+      end: 17
+  tags:
+  - factual
+  - direct-lookup
+- id: q-002
+  question: What is the fastest shift time quoted for the AMG SpeedShift MCT?
+  expected_answer: As low as 100 milliseconds (0.1 seconds), depending on drive mode.
+  sources:
+  - doc: amg_mct.md
+    answer_location:
+      type: line_range
+      start: 31
+      end: 31
+  tags:
+  - factual
+  - direct-lookup
+- id: q-003
+  question: The document gives two different inertia-related percentage figures for the MCT. What are
+    they, and what does each one refer to?
+  expected_answer: The start-off clutch itself has around 60% lower rotational inertia than a fluid-filled
+    torque converter. Separately, the inertia of all the rotating parts of the transmission as a whole
+    was cut by about 30% compared to AMG's torque-converter 7G-Tronic.
+  sources:
+  - doc: amg_mct.md
+    answer_location:
+      type: line_range
+      start: 23
+      end: 23
+  tags:
+  - synthesis
+  - easily-conflated
+- id: q-004
+  question: Is a DCT always faster than the MCT, or does it depend on the type of shift?
+  expected_answer: It depends. For a sequential change with the next gear pre-selected, a DCT shifts in
+    roughly 50 ms, faster than the MCT's ~100 ms, and wins on a track where shifts are predictable. But
+    for an out-of-sequence, multi-gear downshift, a DCT slows down while the MCT shifts it just as fast
+    as a single-gear change — which is why some owners prefer the MCT on the road.
+  sources:
+  - doc: amg_mct.md
+    answer_location:
+      type: line_range
+      start: 46
+      end: 47
+  tags:
+  - synthesis
+  - conditional
+- id: q-005
+  question: Does the "Multi-Clutch" in AMG SpeedShift MCT refer to the transmission having two clutches
+    like a dual-clutch gearbox?
+  expected_answer: No. The MCT has a single input shaft and a single multi-plate wet clutch handling what
+    the torque converter used to do. "Multi-Clutch" instead refers to the multiple internal clutches and
+    brakes of the planetary gearset that the standard 722.9 torque-converter gearbox already used to select
+    its seven gears.
+  sources:
+  - doc: amg_mct.md
+    answer_location:
+      type: line_range
+      start: 19
+      end: 19
+  tags:
+  - adversarial
+  - factual
+- id: q-006
+  question: What torque figure is the 9-speed MCT rated to handle?
+  expected_answer: Around 900 N·m.
+  sources:
+  - doc: amg_mct.md
+    answer_location:
+      type: line_range
+      start: 56
+      end: 56
+  tags:
+  - factual
+  - buried-detail
+- id: q-007
+  question: What three special functions does the document describe as the MCT's 'party tricks'?
+  expected_answer: Automatic double-declutch rev-matching downshifts (Zwischengas), multiple-gear downshifts
+    in a single move (e.g. skipping from 7th straight to 4th), and RaceStart, a launch-control function
+    coordinated by the AMG DRIVE UNIT controller.
+  sources:
+  - doc: amg_mct.md
+    answer_location:
+      type: line_range
+      start: 38
+      end: 40
+  tags:
+  - factual
+  - list-lookup
+- id: q-008
+  question: Why does servicing the MCT differ from servicing a standard 722.9 / 7G-Tronic when it comes
+    to draining the transmission fluid?
+  expected_answer: On a normal 722.9 / 7G-Tronic, fluid is trapped inside the torque converter and needs
+    its own separate drain step. Because the MCT has no torque converter, effectively all of its fluid
+    drains through the main plug instead.
+  sources:
+  - doc: amg_mct.md
+    answer_location:
+      type: line_range
+      start: 52
+      end: 52
+  tags:
+  - synthesis
+- id: q-009
+  question: Was the original 2005 AMG SpeedShift a torque-converter transmission or the wet-clutch MCT
+    design?
+  expected_answer: It was a torque-converter transmission. The 2005 AMG SpeedShift on the SLK 55 AMG was
+    a performance-tuned version of the 7-speed 7G-Tronic (722.9 family) and still used a torque converter;
+    that performance torque-converter version was later branded SpeedShift TCT / 7G-Tronic Sport. The
+    wet-clutch MCT design did not appear until 2008.
+  sources:
+  - doc: amg_mct.md
+    answer_location:
+      type: line_range
+      start: 11
+      end: 11
+  tags:
+  - buried-detail
+  - easily-conflated
+- id: q-010
+  question: What 0-60 mph acceleration time does the document report for the R230 SL 63 AMG?
+  expected_answer: null
+  sources: []
+  tags:
+  - not-in-document

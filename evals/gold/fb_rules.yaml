@@ -1,82 +1,309 @@
-version: 1
+version: 2
 corpus_hashes:
   fb_rules.pdf: "sha256:971813fd51ef91877761f48522bbf337d11f36cfba6f2acd579720d4a8cae277"
+  smg.md: "sha256:088bd4fbae73394fbc20e7fc80a7f2976a95c7282111b9008f83b617759d0724"
 
 entries:
+  # --- existing entries, carried forward ---
+
   - id: q-001
     question: "What is the minimum age for a Formula Bharat team member?"
     expected_answer: "16 years of age."
-    doc: fb_rules.pdf
-    # p.23
-    answer_location: { type: section, value: ["A4.4.1"] }
-    tags: [factual, direct-lookup]
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["A4.4.1"], occurrence: last }
+    tags: [lexical-anchor]
+    # A4.4.1 also appears in the changelog; occurrence: last selects the
+    # rulebook-body copy rather than the changelog mention.
 
   - id: q-002
     question: "Is being 16 years old enough on its own to allow a team member to drive the competition vehicle?"
     expected_answer: "No. Being at least 16 satisfies the general team-member age requirement, but anyone who will actually drive the vehicle during a competition must additionally present a valid, government-issued driver's license for passenger cars that includes a photograph."
-    doc: fb_rules.pdf
-    # p.23
-    answer_location: { type: section, value: ["A4.4.1", "A4.5.1"] }
-    tags: [adversarial, synthesis]
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["A4.4.1"], occurrence: last }
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["A4.5.1"], occurrence: last }
+    tags: [synthesis]
 
   - id: q-003
     question: "How much is the fee that designated drivers must pay when they sign the bond at competition registration?"
     expected_answer: null
-    doc: fb_rules.pdf
-    answer_location: null
-    tags: [not-in-document, in-document-deferred]
+    sources: []
+    tags: [not-in-document]
 
   - id: q-004
     question: "What must the shutdown circuit consist of on a combustion-powered (CV) vehicle, versus an electric (EV) vehicle?"
     expected_answer: "On a CV, the shutdown circuit is a series connection of at least the LVMS, the BSPD, three shutdown buttons, the BOTS, and the inertia switch. On an EV, it is a series connection of at least two master switches, three shutdown buttons, the BOTS, the IMD, the inertia switch, the BSPD, all required interlocks, and the AMS — a longer chain than the CV version, reflecting the extra tractive-system components."
-    doc: fb_rules.pdf
-    # CV4.1.2 p.86, EV6.1.2 p.101
-    answer_location: { type: section, value: ["CV4.1.2", "EV6.1.2"] }
-    tags: [synthesis, near-duplicate-rules]
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["CV4.1.2"] }
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["EV6.1.2"] }
+    tags: [near-duplicate, synthesis]
 
   - id: q-005
     question: "Does the shutdown circuit requirement for an EV include an LVMS, the same way the CV shutdown circuit does?"
     expected_answer: "No. The CV shutdown circuit definition explicitly includes the LVMS. The EV shutdown circuit definition does not list the LVMS at all — instead it requires at least two master switches, the IMD, and the AMS in addition to components both circuits share, like the BOTS, the inertia switch, and the BSPD."
-    doc: fb_rules.pdf
-    # CV4.1.2 p.86, EV6.1.2 p.101
-    answer_location: { type: section, value: ["CV4.1.2", "EV6.1.2"] }
-    tags: [adversarial, near-duplicate-rules]
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["CV4.1.2"] }
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["EV6.1.2"] }
+    tags: [near-duplicate]
+    # the only entry so far that has caught a genuine model reasoning failure
+    # (conflating the two shutdown-circuit component lists) rather than a
+    # retrieval failure.
 
   - id: q-006
     question: "What is the minimum diameter for the shutdown buttons mounted on the sides of the vehicle, and does the cockpit-mounted shutdown button share that same minimum?"
     expected_answer: "The side-mounted shutdown buttons have a minimum allowed diameter of 40 mm. The cockpit-mounted shutdown button has a smaller minimum diameter of 24 mm, so the two thresholds are not the same."
-    doc: fb_rules.pdf
-    # p.70
-    answer_location: { type: section, value: ["T11.4.3", "T11.4.4"] }
-    tags: [numeric, near-duplicate-rules]
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T11.4.3"] }
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T11.4.4"] }
+    tags: [near-duplicate]
 
   - id: q-007
     question: "What are the minimum dimensions the Impact Attenuator (IA) must satisfy in front of the front bulkhead?"
     expected_answer: "The IA must be at least 100 mm high and 200 mm wide for a minimum distance of 200 mm forward of the front bulkhead, and no part of that required 100 x 200 x 200 mm³ volume can sit more than 350 mm above the ground."
-    doc: fb_rules.pdf
-    # p.52
-    answer_location: { type: section, value: ["T3.17.2"] }
-    tags: [factual, numeric]
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T3.17.2"] }
+    tags: [lexical-anchor]
 
   - id: q-008
     question: "How far apart must the shoulder harness mounting points be?"
     expected_answer: "Between 180 mm and 230 mm apart, measured center to center."
-    doc: fb_rules.pdf
-    # p.61
-    answer_location: { type: section, value: ["T5.5.4"] }
-    tags: [factual, direct-lookup]
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T5.5.4"] }
+    tags: [lexical-anchor]
 
   - id: q-009
     question: "Is the Brake Over-Travel Switch (BOTS) an electronic sensor, or something else, and can the driver reset it once it has actuated?"
     expected_answer: "The BOTS must be a mechanical switch — push-pull, push-rotate, or flip type — not an electronic sensor, and it may consist of a series connection of switches. It must be designed so the driver cannot reset it, and repeated actuation must not close the shutdown circuit again."
-    doc: fb_rules.pdf
-    # p.63
-    answer_location: { type: section, value: ["T6.2.2", "T6.2.3"] }
-    tags: [adversarial, synthesis]
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T6.2.2"] }
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T6.2.3"], occurrence: last }
+    tags: [synthesis]
+    # T6.2.3 also appears in the changelog; occurrence: last selects the
+    # rulebook-body copy. T6.2.2 is unique and needs no occurrence.
 
   - id: q-010
     question: "What is the entry fee for a team to register for the Formula Bharat competition?"
     expected_answer: null
-    doc: fb_rules.pdf
-    answer_location: null
+    sources: []
     tags: [not-in-document]
+
+  # --- A. lexical-anchor (new) ---
+
+  - id: q-011
+    question: "What does BSPD stand for and what is it required to do?"
+    expected_answer: "BSPD stands for Brake System Plausibility Device. It is a standalone, non-programmable circuit that must open the shutdown circuit when hard braking occurs while, on an EV, 5 kW or more of power is being delivered to the motors, or on a CV, the throttle position is more than 25% over idle. The shutdown circuit must stay open until the LVMS is power-cycled, or the BSPD may reset itself if the triggering condition has been absent for more than 10 seconds."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T11.6", "T11.6.1"] }
+    tags: [lexical-anchor]
+
+  - id: q-012
+    question: "What is required of every participant, including faculty advisors and volunteers, with respect to insurance?"
+    expected_answer: "Each participant, including faculty advisors and volunteers, must provide proof of valid private liability and individual health insurance for the competition."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["A4.6.1"], occurrence: last }
+    tags: [lexical-anchor]
+    # deliberately hard: A4.6.1 also appears in the changelog, so this rule
+    # ID resolves ambiguously without occurrence: last.
+
+  - id: q-013
+    question: "Which rule requires shutdown buttons to be affixed with the international electrical hazard symbol?"
+    expected_answer: "T11.4.5 requires the international electrical symbol — a red spark on a white-edged blue triangle — to be affixed in close proximity to each shutdown button."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T11.4.5"] }
+    tags: [lexical-anchor]
+
+  - id: q-014
+    question: "Which rule ID modified the minimum age requirement to 16 years, and what does that same rule ID say in the current rulebook body?"
+    expected_answer: "A4.4.1 is the rule ID. In the changelog it is recorded as the change that modified the minimum age to 16 years; in the current rulebook body, A4.4.1 states that team members must be at least 16 years of age — the same requirement, now the standing rule rather than a changelog note."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["A4.4.1"], occurrence: first }
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["A4.4.1"], occurrence: last }
+    tags: [lexical-anchor]
+    # deliberately targets a rule ID that is not unique in the document: the
+    # first occurrence is the changelog mention, the last is the actual rule
+    # text. This entry carries both on purpose, since the question is about
+    # that exact duality rather than about the rule's content alone.
+
+  # --- B. vocabulary-mismatch (new) ---
+
+  - id: q-016
+    question: "What stops the car if the driver's foot slips past the brake pedal?"
+    expected_answer: "A brake pedal over-travel switch (the BOTS) is installed as part of the shutdown circuit specifically for this scenario: if a brake circuit fails and the brake pedal travels further than it should, the BOTS opens the shutdown circuit."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T6.2.1"] }
+    tags: [vocabulary-mismatch]
+
+  - id: q-017
+    question: "How young can someone be to help build the car?"
+    expected_answer: "Team members must be at least 16 years of age."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["A4.4.1"], occurrence: last }
+    tags: [vocabulary-mismatch]
+
+  - id: q-018
+    question: "What's the crash box on the nose for?"
+    expected_answer: "It's the Impact Attenuator (IA) assembly, mounted forward of the front bulkhead. It must be at least 100 mm high and 200 mm wide for a minimum distance of 200 mm ahead of the bulkhead, must not be able to penetrate the bulkhead in a crash, and works together with the Anti-Intrusion Plate (AIP) behind it to absorb impact energy."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T3.17.2"] }
+    tags: [vocabulary-mismatch]
+
+  - id: q-019
+    question: "Do I need to show proof I have health coverage to take part?"
+    expected_answer: "Yes. Every participant, including faculty advisors and volunteers, must provide proof of valid private liability and individual health insurance for the competition."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["A4.6.1"], occurrence: last }
+    tags: [vocabulary-mismatch]
+
+  - id: q-020
+    question: "Can I reach the kill switch from outside the car if something goes wrong?"
+    expected_answer: "Yes. Two of the three required shutdown buttons are mounted on each side of the vehicle, behind the driver's compartment at roughly head height, with a minimum diameter of 40 mm, and they must be easily reachable from outside the vehicle."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T11.4.3"] }
+    tags: [vocabulary-mismatch]
+
+  # --- C. multi-fact synthesis (far apart in the document) ---
+
+  - id: q-021
+    question: "What are all the dimensional minimums that apply to the impact attenuator, including its mounting?"
+    expected_answer: "The IA itself must be at least 100 mm high and 200 mm wide for a minimum distance of 200 mm forward of the front bulkhead, with no part of that volume more than 350 mm above the ground. If bolted to the AIP, it needs a minimum of four 8 mm metric grade 8.8 bolts (or adhesive rated to carry 60 kN in any direction). Separately, when tested, the IA assembly must decelerate a 300 kg vehicle impacting at 7 m/s at no more than 20 g average and 40 g peak, absorbing at least 7350 J of energy."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T3.17.2"] }
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T3.17.5"], occurrence: last }
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T3.19.1"], occurrence: last }
+    tags: [synthesis, boundary-spanning]
+    # the exact shape that already produced a real synthesis failure on
+    # amg_mct q-003: three numeric facts belonging to the same physical
+    # component but living in three separate sub-rules separated by
+    # unrelated clauses, so they will not share a retrieval chunk under any
+    # reasonable chunk size. T3.17.5 and T3.19.1 both also appear in the
+    # changelog, so both need occurrence: last.
+
+  - id: q-022
+    question: "A 17-year-old wants to join a Formula Bharat team. Are they old enough, and does their age trigger any extra paperwork beyond what an adult team member needs?"
+    expected_answer: "Yes, they are old enough — the minimum age is 16. But because they are under 18, they must also submit the Under 18 liability waiver prior to the competition, in addition to the standard liability waiver every onsite participant signs. This is an extra requirement that does not apply to adult team members."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["A4.4.1"], occurrence: last }
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["A4.7.2"], occurrence: last }
+    tags: [synthesis]
+    # both A4.4.1 and A4.7.2 also appear in the changelog, so both need
+    # occurrence: last.
+
+  # --- D. near-duplicate discrimination (new, in addition to kept q-004/005/006) ---
+
+  - id: q-023
+    question: "Does the AIP need to be sized differently depending on whether the IA assembly is bolted or welded to the front bulkhead?"
+    expected_answer: "Yes. If the IA and AIP are bolted to the front bulkhead, the AIP must match the outside dimensions of the front bulkhead exactly. If it is welded instead, the AIP only needs to extend at least to the centerline of the front bulkhead tubing in all directions — a looser requirement than the bolted case. Either way, the AIP must not extend past the outside edges of the front bulkhead."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T3.17.3"], occurrence: last }
+    tags: [near-duplicate]
+    # T3.17.3 also appears in the changelog, so this needs occurrence: last.
+
+  # --- E. long-rule / boundary-spanning (new) ---
+
+  - id: q-024
+    question: "If a shoulder harness is mounted to a tube that isn't straight, what analysis must a team perform to justify it, and what happens if they choose not to?"
+    expected_answer: "The joints between the tube and the structure it's mounted to must be reinforced in the side view by triangulation tubes to prevent torsional rotation. The required analysis method is to use a 7 kN load per attachment and the range of angles from T5.5.5, then calculate that the bent shoulder harness bar triangulation stresses are less than the as-welded yield strength (T3.2.4) for combined bending and shear, and that it does not fail in column buckling. If the team chooses not to perform this strength analysis, rule T3.2.6 applies instead."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T5.5.2"] }
+    tags: [boundary-spanning]
+    # a single clause long and cross-referencing enough (T5.5.5, T3.2.4,
+    # T3.2.6) that a 900-char chunk boundary could plausibly split the
+    # trigger condition from the required analysis method or the fallback.
+
+  - id: q-025
+    question: "Under what two conditions must the BSPD open the shutdown circuit during hard braking, and what has to happen for it to close again?"
+    expected_answer: "On an EV, the BSPD must open the shutdown circuit during hard braking if 5 kW or more of power is being delivered to the motors; on a CV, if throttle position is more than 25% over idle. Once open, the shutdown circuit must remain open until the LVMS is power-cycled, or the BSPD may reset itself if the triggering condition has been absent for more than 10 seconds."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T11.6.1"] }
+    tags: [boundary-spanning]
+    # the rule heading, its two bulleted EV/CV sub-conditions, and the reset
+    # condition span one logical unit; a chunker that splits at the bullet
+    # list would separate the trigger conditions from the reset behavior
+    # described right after them.
+
+  - id: q-036
+    question: "Both the Formula Bharat rules and the SMG document describe a system whose entire purpose is to prevent damage by cutting power before a failure condition escalates. What problem does each one solve?"
+    expected_answer: "The Formula Bharat rulebook requires a Brake Over-Travel Switch (BOTS) that opens the shutdown circuit if a brake circuit fails and the pedal travels further than normal, preventing the shutdown circuit from staying closed during a braking failure. The SMG document describes a safety net in BMW's SMG gearbox that automatically drops to first or second gear if the car slows to a stop and the driver forgets to shift down, and that refuses to allow an upshift-less pull to over-rev and damage the engine. Both systems intervene automatically ahead of a specific failure mode — a brake failure in one case, an over-rev in the other — rather than relying on the driver to notice and react."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T6.2.1"] }
+      - doc: smg.md
+        answer_location: { type: line_range, start: 48, end: 48 }
+    tags: [cross-document, synthesis]
+    # the one retrieval failure mode nothing else in this corpus can catch:
+    # a question whose gold spans live in two entirely different documents,
+    # so a whole-document baseline structurally cannot answer it and must be
+    # recorded as skipped, per spec.
+
+  # --- F. not-in-document (new, in addition to kept q-003/010) ---
+
+  - id: q-027
+    question: "What is the maximum permitted sound level for a CV vehicle at the calculated test speed, and at idle?"
+    expected_answer: "110 dB(C), fast weighting, up to the calculated test speed (the engine speed corresponding to an average piston speed of 15.25 m/s, rounded to the nearest 500 rpm). At idle, the maximum permitted sound level is 103 dB(C), fast weighting."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["CV3.2.1"] }
+    tags: [lexical-anchor]
+    # originally miscategorized as not-in-document; CV3.2.1 states this
+    # explicitly. Corrected after it was caught by manual review rather than
+    # by gold validate, since an empty sources list has no anchor to check.
+
+  - id: q-028
+    question: "How many fire extinguishers must a team have, and what is the minimum firefighting agent capacity required?"
+    expected_answer: "Each team must have at least two dry chemical/dry powder fire extinguishers, each with a minimum firefighting agent capacity of 0.9 kg."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T13.4.1"], occurrence: last }
+    tags: [lexical-anchor]
+    # originally miscategorized as not-in-document; T13.4.1 states this
+    # explicitly, and also collides with the changelog, so occurrence: last
+    # is required. Corrected after manual review.
+
+  - id: q-029
+    question: "Are there any rules governing where sponsor logos or decals may be placed on the vehicle?"
+    expected_answer: null
+    sources: []
+    tags: [not-in-document]
+    # verified absent: grep across "logo", "decal", "sticker requirement",
+    # "sponsor...vehicle", "branding requirement" returns zero hits in the
+    # rulebook body.
+
+  - id: q-030
+    question: "Does a team need a parking permit or trailer permit for the vehicles and equipment they bring to the competition venue?"
+    expected_answer: null
+    sources: []
+    tags: [not-in-document]
+    # verified absent: the only "parked"/"trailer"-adjacent hits in the
+    # document concern dynamic-event testing safety (no other vehicles
+    # nearby during a run) and shutdown-button symbol descriptions, neither
+    # of which addresses venue parking or trailer permits.

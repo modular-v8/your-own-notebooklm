@@ -13,7 +13,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from .goldset import AnswerLocation
+from .goldset import Source
 from ..providers.base import LLMProvider, Message
 
 Verdict = Literal["grounded", "not_grounded", "refused_correctly", "refused_incorrectly"]
@@ -69,12 +69,17 @@ class JudgeResult:
     rationale: str
 
 
-def _format_location(location: AnswerLocation | None) -> str:
-    if location is None:
+def _format_location(sources: list[Source]) -> str:
+    if not sources:
         return "(not applicable)"
-    if location.type == "section":
-        return f"section: {location.value}"
-    return f"{location.type} {location.start}-{location.end}"
+    parts = []
+    for source in sources:
+        loc = source.answer_location
+        if loc.type == "section":
+            parts.append(f"{source.doc} section: {loc.value}")
+        else:
+            parts.append(f"{source.doc} {loc.type} {loc.start}-{loc.end}")
+    return "; ".join(parts)
 
 
 def _extract_json(text: str) -> str:
@@ -118,13 +123,13 @@ class Judge:
         self,
         question: str,
         expected_answer: str,
-        source_location: AnswerLocation | None,
+        sources: list[Source],
         candidate_answer: str,
     ) -> JudgeResult:
         prompt = GROUNDEDNESS_PROMPT.format(
             question=question,
             expected_answer=expected_answer,
-            source_location=_format_location(source_location),
+            source_location=_format_location(sources),
             candidate_answer=candidate_answer,
         )
         return await self._judge(prompt)

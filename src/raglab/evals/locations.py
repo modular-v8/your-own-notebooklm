@@ -2,9 +2,9 @@
 
 Every variant normalizes to a list of half-open `(start, end)` spans (the
 same `text[start:end]` convention the chunker uses). `section` can produce
-more than one span — one per anchor in `value` — the rest exactly one.
+more than one span -- one per anchor in `value` -- the rest exactly one.
 
-Two traps this module exists to avoid (see plan.md):
+Traps this module exists to avoid (see plan.md):
 
 - **Nested rule-ID anchors.** `A1.1` is a literal prefix of `A1.1.1`,
   and the Formula Bharat corpus has 2,269 such IDs. A naive substring
@@ -12,8 +12,14 @@ Two traps this module exists to avoid (see plan.md):
   `(?![\\w.])` on both sides of the anchor prevent a match from landing
   inside a longer ID.
 - **Ambiguous anchors are a validation failure, not a best guess.** An
-  anchor matching zero or more-than-one times is reported as unscoreable
-  rather than silently picking the first match.
+  anchor matching zero or more-than-one times (after the line-initial
+  filter below) is reported as unscoreable rather than silently picking
+  the first match -- unless an explicit `occurrence` selector says which
+  one to take.
+- **A `section` anchor only counts where it begins a line.** Restricting
+  to line-initial matches (permitting leading whitespace and Markdown
+  heading markers) drops mid-sentence cross-references like "...defined in
+  EV6.1.2 must be..." that would otherwise inflate the ambiguity count.
 
 Resolution happens at validation time, before any model call.
 """
@@ -21,16 +27,24 @@ Resolution happens at validation time, before any model call.
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 
 from ..parsers.registry import ExtractedDocument
 from .goldset import AnswerLocation, GoldSet
 
 CharSpan = tuple[int, int]
+# A gold span tagged with the document it belongs to -- required once an
+# entry's sources can span more than one document, so overlap checks never
+# compare offsets from unrelated documents.
+GoldSpan = tuple[str, CharSpan]
 
 # A rule-ID-shaped token: 1-3 uppercase letters, a leading number, then one
 # or more dot-separated numeric segments (A4.4.1, CV4.1.2, T11.4.3, ...).
 RULE_ID_RE = re.compile(r"(?<![\w.])[A-Z]{1,3}\d+(?:\.\d+)+(?![\w.])")
 HEADING_RE = re.compile(r"^#{1,6}[ \t]+\S", re.MULTILINE)
+# Leading whitespace and/or Markdown heading markers are allowed before an
+# anchor still counts as "beginning a line".
+LINE_INITIAL_PREFIX_RE = re.compile(r"[#\s]*")
 
 
 def line_offsets(text: str) -> list[int]:
@@ -75,6 +89,20 @@ def _anchor_pattern(anchor: str) -> re.Pattern[str]:
     return re.compile(rf"(?<![\w.]){re.escape(anchor)}(?![\w.])")
 
 
+def _is_line_initial(text: str, match_start: int) -> bool:
+    line_start = text.rfind("\n", 0, match_start) + 1
+    prefix = text[line_start:match_start]
+    return LINE_INITIAL_PREFIX_RE.fullmatch(prefix) is not None
+
+
+def _line_snippet(text: str, match_start: int) -> str:
+    line_start = text.rfind("\n", 0, match_start) + 1
+    line_end = text.find("\n", match_start)
+    if line_end == -1:
+        line_end = len(text)
+    return text[line_start:line_end].strip()
+
+
 def _next_boundary(text: str, from_pos: int) -> int:
     heading = HEADING_RE.search(text, from_pos)
     rule_id = RULE_ID_RE.search(text, from_pos)
@@ -82,14 +110,66 @@ def _next_boundary(text: str, from_pos: int) -> int:
     return min(candidates) if candidates else len(text)
 
 
-def resolve_section(text: str, anchors: list[str]) -> list[CharSpan]:
+@dataclass(frozen=True)
+class AnchorMatch:
+    line: int
+    line_initial: bool
+    snippet: str
+
+
+def find_matches(text: str, anchor: str) -> list[AnchorMatch]:
+    """Every raw occurrence of `anchor`, in document order, using the same
+    boundary regex `section` resolution uses -- unfiltered by line-initial
+    status, which is reported per-match instead so `gold locate` can show a
+    gold-set author exactly why an anchor is or isn't ambiguous."""
+    matches = []
+    for m in _anchor_pattern(anchor).finditer(text):
+        matches.append(
+            AnchorMatch(
+                line=line_of_offset(text, m.start()),
+                line_initial=_is_line_initial(text, m.start()),
+                snippet=_line_snippet(text, m.start()),
+            )
+        )
+    return matches
+
+
+def _select_occurrence(
+    matches: list[re.Match[str]], occurrence: str | int, anchor: str
+) -> re.Match[str]:
+    if occurrence == "first":
+        return matches[0]
+    if occurrence == "last":
+        return matches[-1]
+    if isinstance(occurrence, int):
+        index = occurrence - 1
+        if index < 0 or index >= len(matches):
+            raise ValueError(
+                f"anchor {anchor!r}: occurrence {occurrence} out of range ({len(matches)} line-initial matches)"
+            )
+        return matches[index]
+    raise ValueError(f"anchor {anchor!r}: invalid occurrence {occurrence!r}")
+
+
+def resolve_section(
+    text: str, anchors: list[str], occurrence: str | int | None = None
+) -> list[CharSpan]:
     spans: list[CharSpan] = []
     for anchor in anchors:
-        matches = list(_anchor_pattern(anchor).finditer(text))
-        if len(matches) != 1:
-            reason = "no match" if not matches else f"{len(matches)} ambiguous matches"
+        all_matches = list(_anchor_pattern(anchor).finditer(text))
+        line_initial_matches = [m for m in all_matches if _is_line_initial(text, m.start())]
+
+        if not line_initial_matches:
+            reason = "no match" if not all_matches else "no line-initial match (only mid-sentence references)"
             raise ValueError(f"anchor {anchor!r}: {reason}")
-        match = matches[0]
+
+        if occurrence is None:
+            if len(line_initial_matches) != 1:
+                raise ValueError(f"anchor {anchor!r}: {len(line_initial_matches)} ambiguous matches")
+            match = line_initial_matches[0]
+        else:
+            match = _select_occurrence(line_initial_matches, occurrence, anchor)
+
         end = _next_boundary(text, match.end())
         spans.append((match.start(), end))
     return spans
@@ -104,26 +184,38 @@ def resolve_answer_location(location: AnswerLocation, text: str) -> list[CharSpa
         return [resolve_char_span(text, location.start, location.end)]
     if location.type == "section":
         assert location.value is not None
-        return resolve_section(text, location.value)
+        return resolve_section(text, location.value, location.occurrence)
     raise ValueError(f"unknown answer_location type {location.type!r}")
 
 
 def resolve_gold_locations(
     gold: GoldSet, extracted: dict[str, ExtractedDocument]
-) -> tuple[dict[str, list[CharSpan]], list[str]]:
-    """Resolve every entry's answer_location; collect unscoreable entries rather than raising.
+) -> tuple[dict[str, list[GoldSpan]], list[str]]:
+    """Resolve every entry's sources into doc-tagged spans; collect
+    unscoreable entries rather than raising.
 
-    Entries tagged not-in-document have no answer_location and are skipped —
-    they aren't scoreable for recall, but that's expected, not an error.
+    Entries tagged not-in-document have no sources and are skipped -- they
+    aren't scoreable for recall, but that's expected, not an error. An
+    entry with several sources contributes one span per source, each
+    tagged with that source's own document, so overlap checks downstream
+    never compare offsets across unrelated documents.
     """
-    spans: dict[str, list[CharSpan]] = {}
+    spans: dict[str, list[GoldSpan]] = {}
     errors: list[str] = []
     for entry in gold.entries:
-        if entry.answer_location is None:
+        if not entry.sources:
             continue
-        text = extracted[entry.doc].text
-        try:
-            spans[entry.id] = resolve_answer_location(entry.answer_location, text)
-        except ValueError as exc:
-            errors.append(f"{entry.id} ({entry.doc}): {exc}")
+        entry_spans: list[GoldSpan] = []
+        entry_errors: list[str] = []
+        for source in entry.sources:
+            text = extracted[source.doc].text
+            try:
+                for span in resolve_answer_location(source.answer_location, text):
+                    entry_spans.append((source.doc, span))
+            except ValueError as exc:
+                entry_errors.append(f"{entry.id} ({source.doc}): {exc}")
+        if entry_errors:
+            errors.extend(entry_errors)
+        else:
+            spans[entry.id] = entry_spans
     return spans, errors

@@ -11,13 +11,19 @@ from __future__ import annotations
 import time
 
 from ..providers.base import LLMProvider, Message
-from .base import PipelineResult, Query
+from .base import PipelineResult, PipelineSkip, Query
 
 SYSTEM_PROMPT = (
     "You answer questions using ONLY the document provided below. "
     "If the document does not contain the answer, say plainly that you "
     "cannot answer from the provided document — do not guess or use "
     "outside knowledge. Cite the part of the document your answer relies on."
+)
+
+CROSS_DOCUMENT_SKIP_REASON = (
+    "cross-document entry: the whole-document baseline puts exactly one document "
+    "in context and structurally cannot answer a question whose gold spans live "
+    "in more than one document"
 )
 
 
@@ -35,6 +41,8 @@ class WholeDocPipeline:
         ]
 
     async def answer(self, query: Query) -> PipelineResult:
+        if query.cross_document:
+            raise PipelineSkip(CROSS_DOCUMENT_SKIP_REASON)
         doc_text = self.documents[query.doc_hint]
         messages = self._build_messages(query.question, doc_text)
         await self.provider.check_over_context(messages)
