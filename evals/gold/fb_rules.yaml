@@ -106,8 +106,10 @@ entries:
     expected_answer: "BSPD stands for Brake System Plausibility Device. It is a standalone, non-programmable circuit that must open the shutdown circuit when hard braking occurs while, on an EV, 5 kW or more of power is being delivered to the motors, or on a CV, the throttle position is more than 25% over idle. The shutdown circuit must stay open until the LVMS is power-cycled, or the BSPD may reset itself if the triggering condition has been absent for more than 10 seconds."
     sources:
       - doc: fb_rules.pdf
-        answer_location: { type: section, value: ["T11.6", "T11.6.1"] }
+        answer_location: { type: section, value: ["T11.6", "T11.6.1"], occurrence: last }
     tags: [lexical-anchor]
+    # T11.6 also appears in the contents listing (line 335); the rule body is
+    # the later occurrence. T11.6.1 is unique, so `last` is a no-op for it.
 
   - id: q-012
     question: "What is required of every participant, including faculty advisors and volunteers, with respect to insurance?"
@@ -251,7 +253,7 @@ entries:
     # list would separate the trigger conditions from the reset behavior
     # described right after them.
 
-  - id: q-036
+  - id: q-026
     question: "Both the Formula Bharat rules and the SMG document describe a system whose entire purpose is to prevent damage by cutting power before a failure condition escalates. What problem does each one solve?"
     expected_answer: "The Formula Bharat rulebook requires a Brake Over-Travel Switch (BOTS) that opens the shutdown circuit if a brake circuit fails and the pedal travels further than normal, preventing the shutdown circuit from staying closed during a braking failure. The SMG document describes a safety net in BMW's SMG gearbox that automatically drops to first or second gear if the car slows to a stop and the driver forgets to shift down, and that refuses to allow an upshift-less pull to over-rev and damage the engine. Both systems intervene automatically ahead of a specific failure mode — a brake failure in one case, an over-rev in the other — rather than relying on the driver to notice and react."
     sources:
@@ -272,11 +274,17 @@ entries:
     expected_answer: "110 dB(C), fast weighting, up to the calculated test speed (the engine speed corresponding to an average piston speed of 15.25 m/s, rounded to the nearest 500 rpm). At idle, the maximum permitted sound level is 103 dB(C), fast weighting."
     sources:
       - doc: fb_rules.pdf
-        answer_location: { type: section, value: ["CV3.2.1"] }
+        answer_location: { type: section, value: ["CV3.2.1", "CV3.2.2"], occurrence: first }
     tags: [lexical-anchor]
     # originally miscategorized as not-in-document; CV3.2.1 states this
     # explicitly. Corrected after it was caught by manual review rather than
     # by gold validate, since an empty sources list has no anchor to check.
+    # Two anchors because the question spans two rules: CV3.2.1 gives 110 dB(C)
+    # up to test speed, CV3.2.2 gives 103 dB(C) at idle.
+    # `first`, not `last`: CV3.2.1's second line-initial match (line 7352) is a
+    # cross-reference that PDF line-wrapping pushed to column zero ("CV3.2.1)."),
+    # so here the rule body is the EARLIER occurrence -- the opposite of the
+    # changelog/contents-listing collisions elsewhere in this file.
 
   - id: q-028
     question: "How many fire extinguishers must a team have, and what is the minimum firefighting agent capacity required?"
