@@ -14,7 +14,7 @@ stored L2-normalized so cosine similarity reduces to a dot product.
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Protocol
 
@@ -73,6 +73,9 @@ class StoredChunk:
     char_start: int
     char_end: int
     text: str
+    # Collections this chunk's document belongs to, per config.toml at
+    # index time. Default keeps pre-Phase-3 call sites and fixtures valid.
+    collections: list[str] = field(default_factory=list)
 
 
 class EmbeddingMismatchError(RuntimeError):
@@ -91,7 +94,9 @@ class VectorStore(Protocol):
     def load_chunks(self) -> list[StoredChunk]: ...
     def load_vectors(self) -> np.ndarray: ...
     def write(self, manifest: IndexManifest, chunks: list[StoredChunk], vectors: np.ndarray) -> None: ...
-    def search(self, query_vector: np.ndarray, k: int) -> list[tuple[StoredChunk, float]]: ...
+    def search(
+        self, query_vector: np.ndarray, k: int, collection: str | None = None
+    ) -> list[tuple[StoredChunk, float]]: ...
 
 
 class NumpyStore:
@@ -133,16 +138,25 @@ class NumpyStore:
                 f.write(json.dumps(asdict(chunk)) + "\n")
         np.save(self.index_dir / VECTORS_FILENAME, vectors.astype(np.float32))
 
-    def search(self, query_vector: np.ndarray, k: int) -> list[tuple[StoredChunk, float]]:
+    def search(
+        self, query_vector: np.ndarray, k: int, collection: str | None = None
+    ) -> list[tuple[StoredChunk, float]]:
         chunks = self.load_chunks()
         vectors = self.load_vectors()
         if not chunks or vectors.shape[0] == 0:
             return []
 
         scores = vectors @ query_vector
+        if collection is not None:
+            # Out-of-collection rows never rank into top-k: masked to -inf
+            # rather than filtered out first, so this stays a three-line
+            # change against the existing brute-force search.
+            mask = np.array([collection in chunk.collections for chunk in chunks])
+            scores = np.where(mask, scores, -np.inf)
+
         top_k = min(k, len(chunks))
         # argpartition is O(n) vs a full O(n log n) sort; fine at this scale either way,
         # but it's the natural way to express "top k" instead of sorting everything.
         top_indices = np.argpartition(-scores, top_k - 1)[:top_k]
         ranked = sorted(top_indices, key=lambda i: -scores[i])
-        return [(chunks[i], float(scores[i])) for i in ranked]
+        return [(chunks[i], float(scores[i])) for i in ranked if np.isfinite(scores[i])]

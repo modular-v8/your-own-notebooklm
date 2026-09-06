@@ -1,12 +1,14 @@
-version: 2
+version: 3
+collection: transmissions
 corpus_hashes:
   egear.md: sha256:8ca8ca8f09e657e1b54ee07dff74334d746a7fbe52c44c7488a5873ee83516ae
 entries:
 - id: q-001
-  question: What is the normal operating pressure of the e-gear hydraulic system, and what can it spike
-    to while the pump recharges the accumulator?
-  expected_answer: System pressure normally sits around 580 psi (40 bar) and can spike toward 725 psi
-    (50 bar) while the pump recharges the accumulator.
+  turns:
+  - question: What is the normal operating pressure of the e-gear hydraulic system,
+      and what can it spike to while the pump recharges the accumulator?
+  expected_answer: System pressure normally sits around 580 psi (40 bar) and can spike
+    toward 725 psi (50 bar) while the pump recharges the accumulator.
   sources:
   - doc: egear.md
     answer_location:
@@ -17,9 +19,10 @@ entries:
   - factual
   - direct-lookup
 - id: q-002
-  question: How fast did Lamborghini claim the Aventador's ISR gearbox could shift?
-  expected_answer: As fast as 50 milliseconds, which Lamborghini described as less than the blink of an
-    eye.
+  turns:
+  - question: How fast did Lamborghini claim the Aventador's ISR gearbox could shift?
+  expected_answer: As fast as 50 milliseconds, which Lamborghini described as less
+    than the blink of an eye.
   sources:
   - doc: egear.md
     answer_location:
@@ -30,9 +33,10 @@ entries:
   - factual
   - direct-lookup
 - id: q-003
-  question: Does the Murciélago's e-gear have an automatic shifting mode?
-  expected_answer: No. The Murciélago has no automatic mode at all, only manual paddle operation. The
-    Gallardo, by contrast, will shift for itself if asked.
+  turns:
+  - question: Does the Murciélago's e-gear have an automatic shifting mode?
+  expected_answer: No. The Murciélago has no automatic mode at all, only manual paddle
+    operation. The Gallardo, by contrast, will shift for itself if asked.
   sources:
   - doc: egear.md
     answer_location:
@@ -43,12 +47,13 @@ entries:
   - adversarial
   - factual
 - id: q-004
-  question: Why did Lamborghini stick with a single-clutch automated manual for the Aventador instead
-    of moving to a dual-clutch transmission?
-  expected_answer: 'Officially, it was about packaging and strength: a robotized manual is smaller and
-    lighter than a DCT, and at the time it was judged better suited to handling the Aventador''s torque.
-    Graziano, who had built the previous single-clutch gearboxes, was brought back to build the new one
-    as well.'
+  turns:
+  - question: Why did Lamborghini stick with a single-clutch automated manual for
+      the Aventador instead of moving to a dual-clutch transmission?
+  expected_answer: 'Officially, it was about packaging and strength: a robotized manual
+    is smaller and lighter than a DCT, and at the time it was judged better suited
+    to handling the Aventador''s torque. Graziano, who had built the previous single-clutch
+    gearboxes, was brought back to build the new one as well.'
   sources:
   - doc: egear.md
     answer_location:
@@ -59,18 +64,21 @@ entries:
   - factual
   - buried-detail
 - id: q-005
-  question: How much does it typically cost to replace the Independent Shifting Rod (ISR) actuator on
-    an Aventador?
+  turns:
+  - question: How much does it typically cost to replace the Independent Shifting
+      Rod (ISR) actuator on an Aventador?
   expected_answer: null
   sources: []
   tags:
   - not-in-document
 - id: q-006
-  question: The e-gear actuator housing is often talked about as one unit. What are the two actuators
-    inside it actually responsible for?
-  expected_answer: A smaller actuator handles selection — a rotary clocking motion that swings a finger
-    through a hairpin duct to line up with the correct shift fork. A larger actuator handles engagement
-    — pushing that finger sideways to actually seat the fork.
+  turns:
+  - question: The e-gear actuator housing is often talked about as one unit. What
+      are the two actuators inside it actually responsible for?
+  expected_answer: A smaller actuator handles selection — a rotary clocking motion
+    that swings a finger through a hairpin duct to line up with the correct shift
+    fork. A larger actuator handles engagement — pushing that finger sideways to actually
+    seat the fork.
   sources:
   - doc: egear.md
     answer_location:
@@ -81,9 +89,11 @@ entries:
   - synthesis
   - easily-conflated
 - id: q-007
-  question: What does a brand new e-gear clutch measure, and at what thickness is it considered finished?
-  expected_answer: A brand new clutch measures around 5.6 mm, and by the time it is down to roughly 1
-    to 1.5 mm it will slip badly enough to be considered finished.
+  turns:
+  - question: What does a brand new e-gear clutch measure, and at what thickness is
+      it considered finished?
+  expected_answer: A brand new clutch measures around 5.6 mm, and by the time it is
+    down to roughly 1 to 1.5 mm it will slip badly enough to be considered finished.
   sources:
   - doc: egear.md
     answer_location:
@@ -94,12 +104,14 @@ entries:
   - factual
   - direct-lookup
 - id: q-008
-  question: If a LARA scan tool shows 22% remaining clutch life, does that mean the clutch should be replaced
-    right away?
-  expected_answer: No. 22% remaining sounds alarming but is still roughly 10,000 miles of driving left,
-    and there is no engineering reason to replace it at that point beyond peace of mind. The advice is
-    to not panic at 22%, though running it much further down (into the last 10-20%) generates disproportionately
-    more heat that can stress nearby components.
+  turns:
+  - question: If a LARA scan tool shows 22% remaining clutch life, does that mean
+      the clutch should be replaced right away?
+  expected_answer: No. 22% remaining sounds alarming but is still roughly 10,000 miles
+    of driving left, and there is no engineering reason to replace it at that point
+    beyond peace of mind. The advice is to not panic at 22%, though running it much
+    further down (into the last 10-20%) generates disproportionately more heat that
+    can stress nearby components.
   sources:
   - doc: egear.md
     answer_location:
@@ -110,11 +122,12 @@ entries:
   - adversarial
   - factual
 - id: q-009
-  question: How does clutch wear compare between owners who drive e-gear like an automatic versus those
-    who drive it deliberately like a manual?
-  expected_answer: 'Reported outcomes are stark: cars driven the automatic way have needed clutch replacement
-    inside 4,000 miles, while disciplined drivers who drive it like a manual see roughly 2% wear over
-    6,000 miles.'
+  turns:
+  - question: How does clutch wear compare between owners who drive e-gear like an
+      automatic versus those who drive it deliberately like a manual?
+  expected_answer: 'Reported outcomes are stark: cars driven the automatic way have
+    needed clutch replacement inside 4,000 miles, while disciplined drivers who drive
+    it like a manual see roughly 2% wear over 6,000 miles.'
   sources:
   - doc: egear.md
     answer_location:
@@ -125,7 +138,9 @@ entries:
   - synthesis
   - quantitative
 - id: q-010
-  question: What was the original retail price of the Lamborghini Gallardo when it launched in 2003?
+  turns:
+  - question: What was the original retail price of the Lamborghini Gallardo when
+      it launched in 2003?
   expected_answer: null
   sources: []
   tags:

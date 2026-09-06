@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from raglab.corpus import hash_bytes
-from raglab.evals.goldset import AnswerLocation, GoldEntry, GoldSet, Source
+from raglab.evals.goldset import AnswerLocation, GoldEntry, GoldSet, Source, Turn
 from raglab.evals.judge import Judge
 from raglab.evals.metrics import compute_aggregates
 from raglab.evals.runner import EvalRunner
@@ -19,26 +19,26 @@ DOCUMENTS = {"doc.md": DOC_TEXT, "big.md": BIG_DOC_TEXT}
 
 def _gold(*entries: GoldEntry) -> GoldSet:
     corpus_hashes = {name: hash_bytes(text.encode()) for name, text in DOCUMENTS.items()}
-    return GoldSet(version=2, corpus_hashes=corpus_hashes, entries=list(entries))
+    return GoldSet(version=3, collection="everything", corpus_hashes=corpus_hashes, entries=list(entries))
 
 
 NORMAL_ENTRY = GoldEntry(
     id="q-001",
-    question="What is X?",
+    turns=[Turn(question="What is X?")],
     expected_answer="Y",
     sources=[Source(doc="doc.md", answer_location=AnswerLocation(type="line_range", start=1, end=2))],
     tags=[],
 )
 NOT_IN_DOC_ENTRY = GoldEntry(
     id="q-002",
-    question="What is Z?",
+    turns=[Turn(question="What is Z?")],
     expected_answer=None,
     sources=[],
     tags=["not-in-document"],
 )
 OVER_CONTEXT_ENTRY = GoldEntry(
     id="q-003",
-    question="What is W?",
+    turns=[Turn(question="What is W?")],
     expected_answer="Y",
     sources=[Source(doc="big.md", answer_location=AnswerLocation(type="line_range", start=1, end=2))],
     tags=[],
@@ -175,7 +175,7 @@ async def test_aggregates_across_mixed_outcomes():
 async def test_cross_document_entry_skipped_by_whole_doc_pipeline():
     cross_doc_entry = GoldEntry(
         id="q-004",
-        question="Cross-doc question",
+        turns=[Turn(question="Cross-doc question")],
         expected_answer="Answer spanning both.",
         sources=[
             Source(doc="doc.md", answer_location=AnswerLocation(type="line_range", start=1, end=1)),

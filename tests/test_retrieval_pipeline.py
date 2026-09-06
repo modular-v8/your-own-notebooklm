@@ -15,7 +15,7 @@ class _StubRetriever:
         self.chunks = chunks
         self.queries: list[str] = []
 
-    def search(self, query: str, k: int = 5) -> list[RetrievedChunk]:
+    def search(self, query: str, k: int = 5, collection: str | None = None) -> list[RetrievedChunk]:
         self.queries.append(query)
         return self.chunks[:k]
 

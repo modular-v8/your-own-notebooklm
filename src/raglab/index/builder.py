@@ -7,10 +7,12 @@ document's chunks and vectors are carried over untouched.
 
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass
 
 import numpy as np
 
+from ..collections import collections_for_doc
 from ..corpus import Document
 from ..parsers.registry import ParserError, extract_document
 from .chunker import CHUNK_OVERLAP, CHUNK_SIZE, chunk_text
@@ -42,7 +44,10 @@ class IndexBuilder:
         self.store = store
         self.embedder = embedder or Embedder()
 
-    def build(self, documents: dict[str, Document]) -> list[DocIndexResult]:
+    def build(
+        self, documents: dict[str, Document], collections: dict[str, list[str]] | None = None
+    ) -> list[DocIndexResult]:
+        collections = collections or {}
         has_existing = self.store.exists()
         existing_manifest = self.store.load_manifest() if has_existing else None
         existing_chunks = self.store.load_chunks() if has_existing else []
@@ -64,6 +69,8 @@ class IndexBuilder:
                 results.append(DocIndexResult(doc=name, chunk_count=0, error=str(exc)))
                 continue
 
+            doc_collections = collections_for_doc(name, collections)
+
             prior_entry = existing_manifest.documents.get(name) if existing_manifest else None
             unchanged = (
                 prior_entry is not None
@@ -72,8 +79,12 @@ class IndexBuilder:
             )
 
             if unchanged:
+                # Membership-only reindex: a collection reassignment isn't a
+                # content change, so refresh `collections` without touching
+                # the vector -- no re-embed call, but the field still tracks
+                # the current config.toml.
                 for row in existing_rows_by_doc.get(name, []):
-                    kept_chunks.append(existing_chunks[row])
+                    kept_chunks.append(dataclasses.replace(existing_chunks[row], collections=doc_collections))
                     kept_vector_rows.append(existing_vectors[row])
                 new_doc_entries[name] = prior_entry
                 results.append(DocIndexResult(doc=name, chunk_count=prior_entry.chunk_count))
@@ -91,6 +102,7 @@ class IndexBuilder:
                         char_start=chunk.char_start,
                         char_end=chunk.char_end,
                         text=chunk.text,
+                        collections=doc_collections,
                     )
                 )
                 kept_vector_rows.append(vector)

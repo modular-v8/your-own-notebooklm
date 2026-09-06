@@ -20,6 +20,12 @@ Traps this module exists to avoid (see plan.md):
   to line-initial matches (permitting leading whitespace and Markdown
   heading markers) drops mid-sentence cross-references like "...defined in
   EV6.1.2 must be..." that would otherwise inflate the ambiguity count.
+- **PDF line-wrapping can push a cross-reference to column zero.** "...up
+  to the maximum test speed (see\nCV3.2.1)." wraps the closing paren onto
+  its own line, which makes "CV3.2.1)." line-initial too. An anchor match
+  immediately followed by `)` is a cross-reference wearing a disguise, not
+  a second occurrence of the rule -- it's excluded from the match set
+  entirely, before the line-initial filter even runs.
 
 Resolution happens at validation time, before any model call.
 """
@@ -95,6 +101,12 @@ def _is_line_initial(text: str, match_start: int) -> bool:
     return LINE_INITIAL_PREFIX_RE.fullmatch(prefix) is not None
 
 
+def _is_cross_reference(text: str, match_end: int) -> bool:
+    """A match immediately followed by `)` is a cross-reference like
+    "(see CV3.2.1)." -- never the rule's own heading, however it wrapped."""
+    return match_end < len(text) and text[match_end] == ")"
+
+
 def _line_snippet(text: str, match_start: int) -> str:
     line_start = text.rfind("\n", 0, match_start) + 1
     line_end = text.find("\n", match_start)
@@ -114,20 +126,23 @@ def _next_boundary(text: str, from_pos: int) -> int:
 class AnchorMatch:
     line: int
     line_initial: bool
+    cross_reference: bool
     snippet: str
 
 
 def find_matches(text: str, anchor: str) -> list[AnchorMatch]:
     """Every raw occurrence of `anchor`, in document order, using the same
     boundary regex `section` resolution uses -- unfiltered by line-initial
-    status, which is reported per-match instead so `gold locate` can show a
-    gold-set author exactly why an anchor is or isn't ambiguous."""
+    or cross-reference status, both reported per-match instead so `gold
+    locate` can show a gold-set author exactly why an anchor is or isn't
+    ambiguous."""
     matches = []
     for m in _anchor_pattern(anchor).finditer(text):
         matches.append(
             AnchorMatch(
                 line=line_of_offset(text, m.start()),
                 line_initial=_is_line_initial(text, m.start()),
+                cross_reference=_is_cross_reference(text, m.end()),
                 snippet=_line_snippet(text, m.start()),
             )
         )
@@ -157,10 +172,15 @@ def resolve_section(
     spans: list[CharSpan] = []
     for anchor in anchors:
         all_matches = list(_anchor_pattern(anchor).finditer(text))
-        line_initial_matches = [m for m in all_matches if _is_line_initial(text, m.start())]
+        candidate_matches = [m for m in all_matches if not _is_cross_reference(text, m.end())]
+        line_initial_matches = [m for m in candidate_matches if _is_line_initial(text, m.start())]
 
         if not line_initial_matches:
-            reason = "no match" if not all_matches else "no line-initial match (only mid-sentence references)"
+            reason = (
+                "no match"
+                if not all_matches
+                else "no line-initial match (only mid-sentence references or cross-references)"
+            )
             raise ValueError(f"anchor {anchor!r}: {reason}")
 
         if occurrence is None:

@@ -11,7 +11,7 @@ from __future__ import annotations
 import time
 
 from ..providers.base import LLMProvider, Message
-from .base import PipelineResult, PipelineSkip, Query
+from .base import ConversationTurn, PipelineResult, PipelineSkip, Query
 
 SYSTEM_PROMPT = (
     "You answer questions using ONLY the document provided below. "
@@ -34,17 +34,21 @@ class WholeDocPipeline:
         self.provider = provider
         self.documents = documents
 
-    def _build_messages(self, question: str, doc_text: str) -> list[Message]:
-        return [
-            Message(role="system", content=SYSTEM_PROMPT),
-            Message(role="user", content=f"DOCUMENT:\n{doc_text}\n\nQUESTION:\n{question}"),
-        ]
+    def _build_messages(
+        self, history: list[ConversationTurn], question: str, doc_text: str
+    ) -> list[Message]:
+        messages = [Message(role="system", content=SYSTEM_PROMPT)]
+        for turn in history:
+            messages.append(Message(role="user", content=turn.question))
+            messages.append(Message(role="assistant", content=turn.answer))
+        messages.append(Message(role="user", content=f"DOCUMENT:\n{doc_text}\n\nQUESTION:\n{question}"))
+        return messages
 
     async def answer(self, query: Query) -> PipelineResult:
         if query.cross_document:
             raise PipelineSkip(CROSS_DOCUMENT_SKIP_REASON)
         doc_text = self.documents[query.doc_hint]
-        messages = self._build_messages(query.question, doc_text)
+        messages = self._build_messages(query.history, query.question, doc_text)
         await self.provider.check_over_context(messages)
 
         start = time.perf_counter()

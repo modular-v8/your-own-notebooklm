@@ -15,11 +15,11 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass, field
 
-from ..pipelines.base import Pipeline, PipelineSkip, Query
+from ..pipelines.base import ConversationTurn, Pipeline, PipelineSkip, Query
 from ..providers.base import OverContextError
 from .citations import CitationResult, score_citations
 from .coverage import score_coverage
-from .goldset import NOT_IN_DOCUMENT_TAG, GoldEntry, GoldSet
+from .goldset import NOT_IN_COLLECTION_TAG, NOT_IN_DOCUMENT_TAG, GoldEntry, GoldSet
 from .judge import Judge
 from .locations import CharSpan, GoldSpan
 from .recall import score_retrieval
@@ -29,14 +29,21 @@ SAFETY_REFUSAL_STOP_REASON = "refusal"
 DEFAULT_CONCURRENCY = 5
 
 
-def _build_query(entry: GoldEntry, primary_doc: str | None) -> Query:
+def _build_query(entry: GoldEntry, primary_doc: str | None, collection: str) -> Query:
     docs = entry.docs
+    history = [ConversationTurn(question=t.question, answer=t.answer) for t in entry.history]
     if len(docs) > 1:
         # doc_hint is informational only here; the whole-doc pipeline must
         # skip before ever reading it, and retrieval ignores it regardless.
-        return Query(question=entry.question, doc_hint=docs[0], cross_document=True)
+        return Query(
+            question=entry.question,
+            doc_hint=docs[0],
+            cross_document=True,
+            history=history,
+            collection=collection,
+        )
     doc_hint = docs[0] if docs else (primary_doc or "")
-    return Query(question=entry.question, doc_hint=doc_hint)
+    return Query(question=entry.question, doc_hint=doc_hint, history=history, collection=collection)
 
 
 def _score_recall(
@@ -75,6 +82,19 @@ def _score_citations_and_coverage(
     return citation_result, coverage
 
 
+def _expects_refusal(entry: GoldEntry, collection: str, collections: dict[str, list[str]]) -> bool:
+    """not-in-document always expects a refusal. not-in-collection expects
+    one only when none of the entry's own docs belong to the *active*
+    collection -- the same entry run against its home collection instead
+    (a --collection override) expects a real, grounded answer."""
+    if NOT_IN_DOCUMENT_TAG in entry.tags:
+        return True
+    if NOT_IN_COLLECTION_TAG in entry.tags:
+        member_docs = set(collections.get(collection, []))
+        return not (set(entry.docs) & member_docs)
+    return False
+
+
 async def _run_entry(
     entry: GoldEntry,
     pipeline: Pipeline,
@@ -82,8 +102,10 @@ async def _run_entry(
     gold_spans: dict[str, list[GoldSpan]],
     chunk_spans: dict[str, CharSpan],
     primary_doc: str | None,
+    collection: str,
+    collections: dict[str, list[str]],
 ) -> tuple[EntryReport, float | None]:
-    query = _build_query(entry, primary_doc)
+    query = _build_query(entry, primary_doc, collection)
     try:
         result = await pipeline.answer(query)
     except OverContextError as exc:
@@ -122,7 +144,7 @@ async def _run_entry(
             reciprocal_rank,
         )
 
-    if NOT_IN_DOCUMENT_TAG in entry.tags:
+    if _expects_refusal(entry, collection, collections):
         judge_result = await judge.score_refusal(entry.question, result.answer)
     else:
         judge_result = await judge.score_groundedness(
@@ -165,6 +187,8 @@ class EvalRunner:
         concurrency: int = DEFAULT_CONCURRENCY,
         gold_spans: dict[str, list[GoldSpan]] | None = None,
         chunk_spans: dict[str, CharSpan] | None = None,
+        collection: str | None = None,
+        collections: dict[str, list[str]] | None = None,
     ):
         self.pipeline = pipeline
         self.judge = judge
@@ -172,6 +196,11 @@ class EvalRunner:
         self.concurrency = concurrency
         self.gold_spans = gold_spans or {}
         self.chunk_spans = chunk_spans or {}
+        # Defaults to the gold set's own declared collection; overridable so
+        # a not-in-collection entry can also be run against the collection
+        # its answer actually lives in, to confirm it's answered there.
+        self.collection = collection or gold.collection
+        self.collections = collections or {}
 
     async def run(self) -> RunResult:
         semaphore = asyncio.Semaphore(self.concurrency)
@@ -180,7 +209,14 @@ class EvalRunner:
         async def bound(entry: GoldEntry) -> tuple[EntryReport, float | None]:
             async with semaphore:
                 return await _run_entry(
-                    entry, self.pipeline, self.judge, self.gold_spans, self.chunk_spans, primary_doc
+                    entry,
+                    self.pipeline,
+                    self.judge,
+                    self.gold_spans,
+                    self.chunk_spans,
+                    primary_doc,
+                    self.collection,
+                    self.collections,
                 )
 
         results = await asyncio.gather(*(bound(entry) for entry in self.gold.entries))

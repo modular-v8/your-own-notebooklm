@@ -41,6 +41,7 @@ class RagLabConfig:
     judge: RoleConfig
     concurrency: int
     retrieval: RetrievalConfig
+    collections: dict[str, list[str]]
 
     @classmethod
     def load(cls, path: Path = DEFAULT_CONFIG_PATH) -> RagLabConfig:
@@ -75,4 +76,9 @@ class RagLabConfig:
             score_threshold=float(retrieval_raw.get("score_threshold", DEFAULT_SCORE_THRESHOLD)),
         )
 
-        return cls(answer=answer, judge=judge, concurrency=concurrency, retrieval=retrieval)
+        collections_raw = raw.get("collections", {})
+        collections = {name: list(docs) for name, docs in collections_raw.items()}
+
+        return cls(
+            answer=answer, judge=judge, concurrency=concurrency, retrieval=retrieval, collections=collections
+        )

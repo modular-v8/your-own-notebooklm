@@ -76,6 +76,9 @@ def test_make_run_id_format():
     assert make_run_id("baseline", started) == "2026-03-05T12-30-45Z-baseline"
 
 
+BASE_GOLD_SET = GoldSetRef(path="evals/gold/x.yaml", version=1, entry_count=1, entry_ids_fingerprint="")
+
+
 def test_find_matching_prior_report_requires_matching_config(tmp_path):
     matching = _report("2026-01-01T00-00-00Z-a", graded=1, grounded_rate=0.5)
     ReportWriter(tmp_path).write(matching)
@@ -86,10 +89,20 @@ def test_find_matching_prior_report_requires_matching_config(tmp_path):
         judge=RoleReportConfig(provider="anthropic", model="claude-opus-5"),
         concurrency=5,
     )
-    assert find_matching_prior_report(tmp_path, different_config) is None
-    found = find_matching_prior_report(tmp_path, BASE_CONFIG)
+    assert find_matching_prior_report(tmp_path, different_config, BASE_GOLD_SET) is None
+    found = find_matching_prior_report(tmp_path, BASE_CONFIG, BASE_GOLD_SET)
     assert found is not None
     assert found.run_id == matching.run_id
+
+
+def test_find_matching_prior_report_requires_matching_gold_set(tmp_path):
+    """A Phase 0 defect: matching on provider config alone let a 29-entry
+    rulebook run print a delta against a 10-entry transmission run."""
+    matching = _report("2026-01-01T00-00-00Z-a", graded=1, grounded_rate=0.5)
+    ReportWriter(tmp_path).write(matching)
+
+    different_gold_set = GoldSetRef(path="evals/gold/y.yaml", version=1, entry_count=1, entry_ids_fingerprint="zzz")
+    assert find_matching_prior_report(tmp_path, BASE_CONFIG, different_gold_set) is None
 
 
 def test_compute_delta_is_new_minus_old():

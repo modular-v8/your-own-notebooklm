@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from raglab.corpus import hash_bytes
-from raglab.evals.goldset import AnswerLocation, GoldEntry, GoldSet, Source
+from raglab.evals.goldset import AnswerLocation, GoldEntry, GoldSet, Source, Turn
 from raglab.evals.judge import Judge
 from raglab.evals.metrics import compute_aggregates
 from raglab.evals.runner import EvalRunner
@@ -38,13 +38,15 @@ class _FakeRetrievalPipeline:
 
 
 def _gold(*entries: GoldEntry) -> GoldSet:
-    return GoldSet(version=2, corpus_hashes={"doc.md": hash_bytes(DOC_TEXT.encode())}, entries=list(entries))
+    return GoldSet(
+        version=3, collection="everything", corpus_hashes={"doc.md": hash_bytes(DOC_TEXT.encode())}, entries=list(entries)
+    )
 
 
 def _entry(entry_id: str, tags: list[str] | None = None) -> GoldEntry:
     return GoldEntry(
         id=entry_id,
-        question=entry_id,
+        turns=[Turn(question=entry_id)],
         expected_answer="Y",
         sources=[Source(doc="doc.md", answer_location=AnswerLocation(type="char_span", start=0, end=10))],
         tags=tags or [],
@@ -55,7 +57,7 @@ HIT_ENTRY = _entry("q-hit")
 MISS_ENTRY = _entry("q-miss")
 NOT_IN_DOC_ENTRY = GoldEntry(
     id="q-nid",
-    question="q-nid",
+    turns=[Turn(question="q-nid")],
     expected_answer=None,
     sources=[],
     tags=["not-in-document"],
@@ -138,7 +140,7 @@ async def test_coverage_recorded_for_multi_anchor_entry():
     gold span being retrieved, coverage counts how many were."""
     multi_entry = GoldEntry(
         id="q-multi",
-        question="q-multi",
+        turns=[Turn(question="q-multi")],
         expected_answer="Y",
         sources=[
             Source(doc="doc.md", answer_location=AnswerLocation(type="char_span", start=0, end=10)),

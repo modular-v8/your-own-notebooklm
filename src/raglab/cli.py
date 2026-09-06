@@ -10,14 +10,17 @@ from pathlib import Path
 import typer
 from dotenv import load_dotenv
 
+from .collections import UnknownCollectionError, require_collection, unreachable_documents
 from .config import RagLabConfig
 from .corpus import load_corpus
 from .evals.goldset import (
+    CollectionMembershipError,
     CorpusMismatchError,
     GoldSet,
     GoldSetError,
     check_tag_vocabulary,
     load_gold_set,
+    verify_collection_membership,
     verify_corpus_hashes,
 )
 from .evals.judge import Judge
@@ -30,10 +33,12 @@ from .evals.report import (
     RoleReportConfig,
     RunConfig,
     compute_delta,
+    entry_ids_fingerprint,
     find_matching_prior_report,
     make_run_id,
 )
 from .evals.runner import EvalRunner
+from .evals.validate import check_not_in_document_lexical_matches
 from .index.builder import IndexBuilder
 from .index.store import EmbeddingMismatchError, NumpyStore
 from .parsers.registry import ExtractedDocument, ParserError, extract_document
@@ -111,9 +116,9 @@ def _load_verified_gold_set(gold_path: Path, corpus_dir: Path):
     return gold, documents
 
 
-def _extract_referenced_documents(gold: GoldSet, documents: dict) -> dict[str, ExtractedDocument]:
+def _extract_documents(gold: GoldSet, documents: dict, doc_names: set[str]) -> dict[str, ExtractedDocument]:
     extracted: dict[str, ExtractedDocument] = {}
-    for doc_name in sorted({doc for entry in gold.entries for doc in entry.docs}):
+    for doc_name in sorted(doc_names):
         document = documents.get(doc_name)
         if document is None:
             typer.echo(f"Corpus missing document {doc_name!r} referenced by gold set", err=True)
@@ -124,6 +129,27 @@ def _extract_referenced_documents(gold: GoldSet, documents: dict) -> dict[str, E
             typer.echo(f"Parser failed on {doc_name}: {exc}", err=True)
             raise typer.Exit(code=1) from None
     return extracted
+
+
+def _extract_referenced_documents(gold: GoldSet, documents: dict) -> dict[str, ExtractedDocument]:
+    return _extract_documents(gold, documents, {doc for entry in gold.entries for doc in entry.docs})
+
+
+def _extract_corpus_documents(gold: GoldSet, documents: dict) -> dict[str, ExtractedDocument]:
+    """Every document the gold set's corpus_hashes names, not just the ones
+    entries cite -- a not-in-document entry names no doc of its own, so
+    checking its claim against the corpus means checking all of it."""
+    return _extract_documents(gold, documents, set(gold.corpus_hashes))
+
+
+def _check_collection(gold: GoldSet, config: RagLabConfig) -> None:
+    try:
+        verify_collection_membership(gold, config.collections)
+    except CollectionMembershipError as exc:
+        typer.echo(f"Collection membership invalid ({len(exc.messages)} problem(s)):", err=True)
+        for message in exc.messages:
+            typer.echo(f"  - {message}", err=True)
+        raise typer.Exit(code=1) from None
 
 
 def _check_gold_locations(gold: GoldSet, extracted: dict[str, ExtractedDocument]) -> dict[str, list[GoldSpan]]:
@@ -158,14 +184,23 @@ def _resolve_gold_locations_for_run(
 def gold_validate(
     gold_path: Path = typer.Argument(..., help="Path to the gold-set YAML file"),
     corpus_dir: Path = typer.Option(DEFAULT_CORPUS_DIR, help="Directory of corpus documents"),
+    config_path: Path = typer.Option(DEFAULT_CONFIG_PATH, "--config"),
 ) -> None:
-    """Validate a gold set's schema, corpus hashes, and answer_location spans. Makes no model call."""
+    """Validate a gold set's schema, corpus hashes, collection membership,
+    and answer_location spans. Makes no model call."""
     gold, documents = _load_verified_gold_set(gold_path, corpus_dir)
+    config = RagLabConfig.load(config_path)
+    _check_collection(gold, config)
+
     extracted = _extract_referenced_documents(gold, documents)
     _check_gold_locations(gold, extracted)
 
     tag_warnings = check_tag_vocabulary(gold)
     for warning in tag_warnings:
+        typer.echo(f"Warning: {warning}")
+
+    corpus_extracted = _extract_corpus_documents(gold, documents)
+    for warning in check_not_in_document_lexical_matches(gold, corpus_extracted):
         typer.echo(f"Warning: {warning}")
 
     typer.echo(f"OK: {len(gold.entries)} entries, {len(gold.corpus_hashes)} corpus documents verified.")
@@ -201,6 +236,8 @@ def gold_locate(
         typer.echo(f"{doc_name}:")
         for match in matches:
             marker = "line-initial" if match.line_initial else "mid-sentence"
+            if match.cross_reference:
+                marker += ", cross-reference"
             typer.echo(f"  line {match.line} [{marker}]: {match.snippet}")
         total_matches += len(matches)
 
@@ -212,21 +249,25 @@ def gold_locate(
 def index_build(
     corpus_dir: Path = typer.Option(DEFAULT_CORPUS_DIR, "--corpus-dir"),
     index_dir: Path = typer.Option(DEFAULT_INDEX_DIR, "--index-dir"),
+    config_path: Path = typer.Option(DEFAULT_CONFIG_PATH, "--config"),
 ) -> None:
     """Parse, chunk, and embed every corpus document into a persistent index.
 
     Only documents whose source hash or parser identity changed are re-chunked
-    and re-embedded; the rest carry over untouched. Makes no model call
-    (fastembed downloads its ONNX model once on first use, then runs locally).
+    and re-embedded; the rest carry over untouched (a collection reassignment
+    alone never triggers a re-embed). Makes no model call (fastembed downloads
+    its ONNX model once on first use, then runs locally).
     """
     documents = load_corpus(corpus_dir)
     if not documents:
         typer.echo(f"No documents found in {corpus_dir}", err=True)
         raise typer.Exit(code=1)
 
+    config = RagLabConfig.load(config_path)
+
     typer.echo(f"Indexing {len(documents)} document(s) from {corpus_dir}...")
     builder = IndexBuilder(NumpyStore(index_dir))
-    results = builder.build(documents)
+    results = builder.build(documents, collections=config.collections)
 
     failed = 0
     for result in results:
@@ -237,17 +278,49 @@ def index_build(
             typer.echo(f"  {result.doc}: {result.chunk_count} chunks")
 
     typer.echo(f"Wrote index to {index_dir}")
+
+    for doc_name in unreachable_documents(list(documents), config.collections):
+        typer.echo(f"Warning: {doc_name} belongs to no collection; unreachable by any scoped query.")
+
     if failed:
         typer.echo(f"{failed} document(s) failed to index.", err=True)
         raise typer.Exit(code=1)
+
+
+@app.command("collections")
+def collections_list(
+    index_dir: Path = typer.Option(DEFAULT_INDEX_DIR, "--index-dir"),
+    config_path: Path = typer.Option(DEFAULT_CONFIG_PATH, "--config"),
+) -> None:
+    """List each configured collection with its documents and chunk counts."""
+    config = RagLabConfig.load(config_path)
+    if not config.collections:
+        typer.echo("No collections configured in config.toml.")
+        return
+
+    store = NumpyStore(index_dir)
+    chunk_counts: dict[str, int] = {}
+    if store.exists():
+        for chunk in store.load_chunks():
+            for name in chunk.collections:
+                chunk_counts[name] = chunk_counts.get(name, 0) + 1
+    else:
+        typer.echo(f"No index at {index_dir}; showing configured membership only (chunk counts unavailable).")
+
+    for name, docs in config.collections.items():
+        typer.echo(f"{name}: {len(docs)} document(s), {chunk_counts.get(name, 0)} chunk(s)")
+        for doc in docs:
+            typer.echo(f"  - {doc}")
 
 
 @app.command("search")
 def search(
     query: str = typer.Argument(..., help="Search query"),
     k: int = typer.Option(5, "--k"),
+    collection: str | None = typer.Option(None, "--collection", help="Restrict search to this collection"),
     index_dir: Path = typer.Option(DEFAULT_INDEX_DIR, "--index-dir"),
     corpus_dir: Path = typer.Option(DEFAULT_CORPUS_DIR, "--corpus-dir"),
+    config_path: Path = typer.Option(DEFAULT_CONFIG_PATH, "--config"),
 ) -> None:
     """Search the index; print top-k chunks with score, document, line range, text."""
     store = NumpyStore(index_dir)
@@ -255,8 +328,16 @@ def search(
         typer.echo(f"No index at {index_dir}. Run `raglab index` first.", err=True)
         raise typer.Exit(code=1)
 
+    if collection is not None:
+        config = RagLabConfig.load(config_path)
+        try:
+            require_collection(collection, config.collections)
+        except UnknownCollectionError as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(code=1) from None
+
     try:
-        results = Retriever(store).search(query, k=k)
+        results = Retriever(store).search(query, k=k, collection=collection)
     except EmbeddingMismatchError as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=1) from None
@@ -307,6 +388,9 @@ def eval_run(
     gold_path: Path = typer.Option(..., "--gold", help="Path to the gold-set YAML file"),
     name: str = typer.Option(..., "--name", help="Short run name, used in the report filename"),
     pipeline_name: str = typer.Option("whole_doc", "--pipeline"),
+    collection: str | None = typer.Option(
+        None, "--collection", help="Override the gold set's own collection for this run"
+    ),
     corpus_dir: Path = typer.Option(DEFAULT_CORPUS_DIR, "--corpus-dir"),
     runs_dir: Path = typer.Option(DEFAULT_RUNS_DIR, "--runs-dir"),
     index_dir: Path = typer.Option(DEFAULT_INDEX_DIR, "--index-dir"),
@@ -318,10 +402,20 @@ def eval_run(
         raise typer.Exit(code=1)
 
     gold, documents = _load_verified_gold_set(gold_path, corpus_dir)
+    config = RagLabConfig.load(config_path)
+    # Membership validation always checks the gold set's own declared home
+    # collection -- that's independent of which collection this particular
+    # run is scoped to.
+    _check_collection(gold, config)
+    active_collection = collection or gold.collection
+    try:
+        require_collection(active_collection, config.collections)
+    except UnknownCollectionError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from None
+
     extracted = _extract_referenced_documents(gold, documents)
     gold_spans = _resolve_gold_locations_for_run(gold, extracted)
-
-    config = RagLabConfig.load(config_path)
 
     try:
         answer_provider = build_provider(config.answer.provider, config.answer.model)
@@ -372,16 +466,26 @@ def eval_run(
         concurrency=config.concurrency,
         gold_spans=gold_spans,
         chunk_spans=chunk_spans,
+        collection=active_collection,
+        collections=config.collections,
     )
 
     run_config = RunConfig(
         pipeline=pipeline_name,
+        collection=active_collection,
         answer=RoleReportConfig(provider=answer_provider.name, model=answer_provider.model),
         judge=RoleReportConfig(provider=judge_provider.name, model=judge_provider.model),
         concurrency=config.concurrency,
     )
-    # Look for a matching-config prior report before writing this run's own.
-    previous_report = find_matching_prior_report(runs_dir, run_config)
+    gold_set_ref = GoldSetRef(
+        path=str(gold_path),
+        version=gold.version,
+        entry_count=len(gold.entries),
+        entry_ids_fingerprint=entry_ids_fingerprint([e.id for e in gold.entries]),
+    )
+    # Look for a matching-config, matching-gold-set prior report before
+    # writing this run's own.
+    previous_report = find_matching_prior_report(runs_dir, run_config, gold_set_ref)
 
     started_at = datetime.now(timezone.utc)
     typer.echo(
@@ -395,13 +499,16 @@ def eval_run(
 
     entries = run_result.entries
     tags_by_id = {entry.id: entry.tags for entry in gold.entries}
-    aggregates = compute_aggregates(entries, run_result.reciprocal_ranks, tags_by_id)
+    turn_position_by_id = {
+        entry.id: ("follow_up" if entry.is_follow_up else "standalone") for entry in gold.entries
+    }
+    aggregates = compute_aggregates(entries, run_result.reciprocal_ranks, tags_by_id, turn_position_by_id)
     report = Report(
         run_id=make_run_id(name, started_at),
         started_at=started_at.isoformat(),
         duration_s=duration_s,
         config=run_config,
-        gold_set=GoldSetRef(path=str(gold_path), version=gold.version, entry_count=len(gold.entries)),
+        gold_set=gold_set_ref,
         corpus_hashes=gold.corpus_hashes,
         aggregates=aggregates,
         entries=entries,
@@ -443,6 +550,16 @@ def eval_run(
                 f"mean_coverage={_fmt_pct(tag_agg.mean_coverage)}"
             )
 
+    if aggregates.by_turn_position:
+        typer.echo("By turn position:")
+        for position, pos_agg in aggregates.by_turn_position.items():
+            mean_tokens = f"{pos_agg.mean_input_tokens:.0f}" if pos_agg.mean_input_tokens is not None else "n/a"
+            typer.echo(
+                f"  {position} (n={pos_agg.count}): recall_at_k={_fmt_pct(pos_agg.recall_at_k)} "
+                f"grounded={_fmt_pct(pos_agg.grounded_rate)} "
+                f"mean_input_tokens={mean_tokens}"
+            )
+
     failed = [
         e.id
         for e in entries
@@ -458,6 +575,8 @@ def eval_run(
 
     if previous_report is not None:
         _print_delta(previous_report, report)
+    else:
+        typer.echo("No comparable prior run found (matching config + gold set).")
 
 
 if __name__ == "__main__":

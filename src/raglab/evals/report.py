@@ -8,6 +8,7 @@ the pipeline it measures.
 
 from __future__ import annotations
 
+import hashlib
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal
@@ -27,6 +28,9 @@ class RoleReportConfig(BaseModel):
 
 class RunConfig(BaseModel):
     pipeline: str
+    # Default keeps pre-Phase-3 reports loadable; "" never matches a real
+    # collection, so an old report simply never counts as comparable.
+    collection: str = ""
     answer: RoleReportConfig
     judge: RoleReportConfig
     concurrency: int
@@ -36,6 +40,15 @@ class GoldSetRef(BaseModel):
     path: str
     version: int
     entry_count: int
+    # sha256 of the sorted entry ids -- lets delta-matching tell "same gold
+    # set, run again" from "different gold set, same provider config"
+    # (a Phase 0 defect: see specs/3-collections/plan.md). Default "" for
+    # pre-Phase-3 reports, which then never match by construction.
+    entry_ids_fingerprint: str = ""
+
+
+def entry_ids_fingerprint(entry_ids: list[str]) -> str:
+    return hashlib.sha256(",".join(sorted(entry_ids)).encode()).hexdigest()[:16]
 
 
 class TagAggregates(BaseModel):
@@ -51,6 +64,9 @@ class TagAggregates(BaseModel):
     fabrication_rate: float | None = None
     mean_coverage: float | None = None
     uncited: int = 0
+    # Mean input tokens per question in this group -- the by_turn_position
+    # breakdown is what shows what conversation history costs a follow-up.
+    mean_input_tokens: float | None = None
 
 
 class Aggregates(BaseModel):
@@ -70,6 +86,9 @@ class Aggregates(BaseModel):
     mean_coverage: float | None = None
     uncited: int = 0
     by_tag: dict[str, TagAggregates] = {}
+    # Keyed "standalone" / "follow_up" -- same shape as by_tag (plan.md),
+    # since a turn position is really just another grouping.
+    by_turn_position: dict[str, TagAggregates] = {}
 
 
 class UsageReport(BaseModel):
@@ -123,19 +142,27 @@ class ReportWriter:
         return path
 
 
-def configs_match(a: RunConfig, b: RunConfig) -> bool:
+def configs_match(a: RunConfig, b: RunConfig, gold_a: GoldSetRef, gold_b: GoldSetRef) -> bool:
+    """Provider/pipeline config alone isn't enough: matching on that alone
+    let a 29-entry rulebook run print a delta against a 10-entry
+    transmission run (a Phase 0 defect). Gold-set identity -- path and a
+    fingerprint of its entry ids -- must match too."""
     return (
         a.pipeline == b.pipeline
+        and a.collection == b.collection
         and a.answer.provider == b.answer.provider
         and a.answer.model == b.answer.model
         and a.judge.provider == b.judge.provider
         and a.judge.model == b.judge.model
         and a.concurrency == b.concurrency
+        and gold_a.path == gold_b.path
+        and gold_a.entry_ids_fingerprint == gold_b.entry_ids_fingerprint
     )
 
 
-def find_matching_prior_report(runs_dir: Path, config: RunConfig) -> Report | None:
-    """Most recent existing report with a matching config, or None.
+def find_matching_prior_report(runs_dir: Path, config: RunConfig, gold_set: GoldSetRef) -> Report | None:
+    """Most recent existing report with a matching config and gold-set
+    identity, or None.
 
     Call this before writing the current run's report — once written, it
     would otherwise match itself.
@@ -147,7 +174,7 @@ def find_matching_prior_report(runs_dir: Path, config: RunConfig) -> Report | No
             report = Report.model_validate_json(path.read_text(encoding="utf-8"))
         except (ValueError, OSError):
             continue
-        if configs_match(report.config, config):
+        if configs_match(report.config, config, report.gold_set, gold_set):
             return report
     return None
 

@@ -1,9 +1,11 @@
-version: 2
+version: 3
+collection: transmissions
 corpus_hashes:
   smg.md: sha256:088bd4fbae73394fbc20e7fc80a7f2976a95c7282111b9008f83b617759d0724
 entries:
 - id: q-001
-  question: In what year did BMW coin the concept of the Sequential Manual Gearbox?
+  turns:
+  - question: In what year did BMW coin the concept of the Sequential Manual Gearbox?
   expected_answer: '1996.'
   sources:
   - doc: smg.md
@@ -15,7 +17,9 @@ entries:
   - factual
   - direct-lookup
 - id: q-002
-  question: In manual mode at the highest DRIVELOGIC setting, how fast can the SMG fire off a shift?
+  turns:
+  - question: In manual mode at the highest DRIVELOGIC setting, how fast can the SMG
+      fire off a shift?
   expected_answer: As quickly as 80 milliseconds.
   sources:
   - doc: smg.md
@@ -27,12 +31,14 @@ entries:
   - factual
   - direct-lookup
 - id: q-003
-  question: How does the reliability reputation of SMG I compare to the car it debuted in, versus SMG
-    II and its debut car?
-  expected_answer: SMG I debuted in the E36 M3 and was a rough first attempt — relatively fragile and
-    unreliable, with owners often reporting costly repairs. SMG II debuted in the 2001 E46 M3 (alongside
-    the S54 straight-six) and is the iteration that became truly famous, for better or worse, rather than
-    being singled out as unreliable in the same way.
+  turns:
+  - question: How does the reliability reputation of SMG I compare to the car it debuted
+      in, versus SMG II and its debut car?
+  expected_answer: SMG I debuted in the E36 M3 and was a rough first attempt — relatively
+    fragile and unreliable, with owners often reporting costly repairs. SMG II debuted
+    in the 2001 E46 M3 (alongside the S54 straight-six) and is the iteration that
+    became truly famous, for better or worse, rather than being singled out as unreliable
+    in the same way.
   sources:
   - doc: smg.md
     answer_location:
@@ -42,13 +48,15 @@ entries:
   tags:
   - synthesis
 - id: q-004
-  question: How does DRIVELOGIC behavior differ between its lowest and highest settings?
-  expected_answer: At the lower settings, the gearbox pulls away in a taller gear (second instead of first),
-    shifts earlier around 2,500 rpm, reaches top gear sooner for efficiency, and shifts gently. At the
-    higher settings, it holds gears longer, lets revs climb further (shift points moving toward 3,500
-    rpm and beyond under hard acceleration), favours lower gears for sharper response, and shifts both
-    up and down far more aggressively — with the highest manual-mode setting firing shifts as fast as
-    80 milliseconds.
+  turns:
+  - question: How does DRIVELOGIC behavior differ between its lowest and highest settings?
+  expected_answer: At the lower settings, the gearbox pulls away in a taller gear
+    (second instead of first), shifts earlier around 2,500 rpm, reaches top gear sooner
+    for efficiency, and shifts gently. At the higher settings, it holds gears longer,
+    lets revs climb further (shift points moving toward 3,500 rpm and beyond under
+    hard acceleration), favours lower gears for sharper response, and shifts both
+    up and down far more aggressively — with the highest manual-mode setting firing
+    shifts as fast as 80 milliseconds.
   sources:
   - doc: smg.md
     answer_location:
@@ -58,8 +66,11 @@ entries:
   tags:
   - synthesis
 - id: q-005
-  question: Which component in the SMG II hardware is responsible for deciding exactly when to shift?
-  expected_answer: The DME (MSS54) — described as the brain that decides exactly when to shift.
+  turns:
+  - question: Which component in the SMG II hardware is responsible for deciding exactly
+      when to shift?
+  expected_answer: The DME (MSS54) — described as the brain that decides exactly when
+    to shift.
   sources:
   - doc: smg.md
     answer_location:
@@ -70,8 +81,10 @@ entries:
   - factual
   - table-lookup
 - id: q-006
-  question: Which cars used the SMG III, and in what years was it in operation?
-  expected_answer: SMG III was used in the E60 M5 and E63/E64 M6, operating from roughly 2005 to 2010.
+  turns:
+  - question: Which cars used the SMG III, and in what years was it in operation?
+  expected_answer: SMG III was used in the E60 M5 and E63/E64 M6, operating from roughly
+    2005 to 2010.
   sources:
   - doc: smg.md
     answer_location:
@@ -82,9 +95,11 @@ entries:
   - factual
   - table-lookup
 - id: q-007
-  question: Could you get a manual gearbox in the E60 M5 or E63/E64 M6, and if so, where?
-  expected_answer: Yes, but only in the US — the manual version of the M5 and M6 was offered exclusively
-    in the American market.
+  turns:
+  - question: Could you get a manual gearbox in the E60 M5 or E63/E64 M6, and if so,
+      where?
+  expected_answer: Yes, but only in the US — the manual version of the M5 and M6 was
+    offered exclusively in the American market.
   sources:
   - doc: smg.md
     answer_location:
@@ -95,9 +110,11 @@ entries:
   - factual
   - buried-detail
 - id: q-008
-  question: When inspecting a used E46 M3, is the SMG the only area a buyer should have checked?
-  expected_answer: No. The SMG is one of three areas commonly flagged for pre-purchase inspection on the
-    E46 M3, alongside the VANOS system and the rear subframe.
+  turns:
+  - question: When inspecting a used E46 M3, is the SMG the only area a buyer should
+      have checked?
+  expected_answer: No. The SMG is one of three areas commonly flagged for pre-purchase
+    inspection on the E46 M3, alongside the VANOS system and the rear subframe.
   sources:
   - doc: smg.md
     answer_location:
@@ -108,11 +125,13 @@ entries:
   - adversarial
   - factual
 - id: q-009
-  question: Is lifting off the throttle during a shift a universally agreed-upon technique for driving
-    an SMG well?
-  expected_answer: No. It's the technique most owners land on and is described as smoothing out the clunky,
-    jerky shifting, but not everyone agrees it's necessary — some argue it can even confuse the shift
-    logic, since the SMG adapts to its driver over time.
+  turns:
+  - question: Is lifting off the throttle during a shift a universally agreed-upon
+      technique for driving an SMG well?
+  expected_answer: No. It's the technique most owners land on and is described as
+    smoothing out the clunky, jerky shifting, but not everyone agrees it's necessary
+    — some argue it can even confuse the shift logic, since the SMG adapts to its
+    driver over time.
   sources:
   - doc: smg.md
     answer_location:
@@ -123,8 +142,9 @@ entries:
   - synthesis
   - hedged-claim
 - id: q-010
-  question: What was the original retail price difference between the SMG-equipped E46 M3 and the standard
-    manual E46 M3?
+  turns:
+  - question: What was the original retail price difference between the SMG-equipped
+      E46 M3 and the standard manual E46 M3?
   expected_answer: null
   sources: []
   tags:

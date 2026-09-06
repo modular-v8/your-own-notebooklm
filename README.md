@@ -2,7 +2,7 @@
 
 A from-scratch RAG learning project: build a NotebookLM-style "answer only from this document" system, and measure every retrieval decision against a fixed baseline instead of by feel.
 
-Phase 0 built the measuring instrument: a provider-agnostic eval harness and a whole-document baseline pipeline, no retrieval. Phase 1 added real retrieval — parsing, chunking, local embedding, a persistent vector index, and a retrieval pipeline scored on recall@k and MRR against the same harness. Phase 2 (current) adds machine-checkable citations — the retrieval pipeline emits the chunk ids it relied on, and the harness verifies them deterministically (fabrication, citation precision, coverage) with no LLM involved, plus a gold-set schema v2 supporting multi-document entries and a controlled tag vocabulary. See [`specs/2-grounded-answering/spec.md`](specs/2-grounded-answering/spec.md) and [`plan.md`](specs/2-grounded-answering/plan.md).
+Phase 0 built the measuring instrument: a provider-agnostic eval harness and a whole-document baseline pipeline, no retrieval. Phase 1 added real retrieval — parsing, chunking, local embedding, a persistent vector index, and a retrieval pipeline scored on recall@k and MRR against the same harness. Phase 2 added machine-checkable citations — the retrieval pipeline emits the chunk ids it relied on, and the harness verifies them deterministically (fabrication, citation precision, coverage) with no LLM involved, plus a gold-set schema v2 supporting multi-document entries and a controlled tag vocabulary. Phase 3 (current) adds named document collections that scope retrieval, and multi-turn conversations — a follow-up question like "what about EVs?" is asked the way a person actually asks it, with the harness measuring how much recall suffers when retrieval sees only the raw follow-up and not the conversation that gives it meaning. See [`specs/3-collections/spec.md`](specs/3-collections/spec.md) and [`plan.md`](specs/3-collections/plan.md).
 
 ## Setup
 
@@ -37,13 +37,18 @@ uv run raglab search "<query>"
 # Run a gold set end to end and write a report
 uv run raglab eval run --gold evals/gold/<name>.yaml --name baseline --pipeline whole_doc
 uv run raglab eval run --gold evals/gold/<name>.yaml --name retrieval --pipeline retrieval
+
+# List collections, or scope a search or eval run to one
+uv run raglab collections
+uv run raglab search "<query>" --collection <name>
+uv run raglab eval run --gold evals/gold/<name>.yaml --name run --pipeline retrieval --collection <name>
 ```
 
-Provider selection lives in `config.toml` (`[provider].name`), overridable per-run via the `RAGLAB_PROVIDER` environment variable — no code change either way. Retrieval's `top_k` and refusal `score_threshold` live in `config.toml`'s `[retrieval]` section.
+Provider selection lives in `config.toml` (`[provider].name`), overridable per-run via the `RAGLAB_PROVIDER` environment variable — no code change either way. Retrieval's `top_k` and refusal `score_threshold` live in `config.toml`'s `[retrieval]` section. Document collections are named lists in `config.toml`'s `[collections]` section.
 
 ## Status
 
-Phase 1 complete: indexing, search, and `whole_doc`/`retrieval` eval runs work end to end against the real corpus (five documents, one a 137-page PDF rulebook). Phase 2 in progress: gold-set schema v2, citation parsing/scoring, and the expanded `fb_rules` gold set are implemented and unit-tested; live retrieval re-runs across all five gold sets are pending.
+Phases 0–3 complete and live-verified. Indexing, search, and `whole_doc`/`retrieval` eval runs work end to end against the real corpus (five documents, one a 137-page PDF rulebook), with machine-checkable citations, named collections that scope retrieval, and multi-turn conversation history. Live runs across all six gold sets confirm collection scoping (a not-in-collection question is refused under one collection, answered correctly under another) and the follow-up retrieval deficit Phase 4 exists to close: recall@k on standalone questions held at 80%, but dropped to 50% on follow-up questions asked the way a person actually asks them.
 
 ## Tests
 

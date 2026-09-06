@@ -42,6 +42,7 @@ def _tag_aggregate(entries: list[EntryReport]) -> TagAggregates:
     refusal_entries = [e for e in graded if e.verdict in REFUSAL_VERDICTS]
     recall_hits = [e.recall_hit for e in entries if e.recall_hit is not None]
     citation_precision, fabrication_rate, mean_coverage, uncited = _citation_stats(entries)
+    input_tokens = [e.usage.input_tokens for e in entries if e.usage is not None]
 
     return TagAggregates(
         count=len(entries),
@@ -54,6 +55,7 @@ def _tag_aggregate(entries: list[EntryReport]) -> TagAggregates:
         fabrication_rate=fabrication_rate,
         mean_coverage=mean_coverage,
         uncited=uncited,
+        mean_input_tokens=_mean(input_tokens) if input_tokens else None,
     )
 
 
@@ -65,10 +67,22 @@ def _compute_by_tag(entries: list[EntryReport], tags_by_id: dict[str, list[str]]
     return {tag: _tag_aggregate(tagged_entries) for tag, tagged_entries in sorted(grouped.items())}
 
 
+def _compute_by_turn_position(
+    entries: list[EntryReport], turn_position_by_id: dict[str, str]
+) -> dict[str, TagAggregates]:
+    grouped: dict[str, list[EntryReport]] = {}
+    for entry in entries:
+        position = turn_position_by_id.get(entry.id)
+        if position is not None:
+            grouped.setdefault(position, []).append(entry)
+    return {position: _tag_aggregate(es) for position, es in sorted(grouped.items())}
+
+
 def compute_aggregates(
     entries: list[EntryReport],
     reciprocal_ranks: list[float] | None = None,
     tags_by_id: dict[str, list[str]] | None = None,
+    turn_position_by_id: dict[str, str] | None = None,
 ) -> Aggregates:
     graded = [e for e in entries if e.status == "graded"]
     ungraded = [e for e in entries if e.status == "ungraded"]
@@ -91,6 +105,7 @@ def compute_aggregates(
 
     citation_precision, fabrication_rate, mean_coverage, uncited = _citation_stats(entries)
     by_tag = _compute_by_tag(entries, tags_by_id) if tags_by_id else {}
+    by_turn_position = _compute_by_turn_position(entries, turn_position_by_id) if turn_position_by_id else {}
 
     return Aggregates(
         grounded_rate=grounded_rate,
@@ -109,6 +124,7 @@ def compute_aggregates(
         mean_coverage=mean_coverage,
         uncited=uncited,
         by_tag=by_tag,
+        by_turn_position=by_turn_position,
     )
 
 

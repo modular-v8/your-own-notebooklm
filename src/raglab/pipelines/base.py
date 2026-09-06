@@ -13,6 +13,13 @@ and structurally cannot be answered by one — `PipelineSkip` is how a
 pipeline declines before making any model call, distinct from
 `OverContextError` (document too big) even though the runner records both
 as `status="skipped"`.
+
+Phase 3 adds `history` and `collection`. The asymmetry between them is the
+whole measurement this phase exists to produce: `collection` scopes
+retrieval, but `history` never reaches it — a pipeline hands prior turns to
+the model as conversation context while retrieving with the final turn's
+raw question alone. Wiring history into retrieval would erase the
+follow-up deficit Phase 4 needs to close (see specs/3-collections/plan.md).
 """
 
 from __future__ import annotations
@@ -24,10 +31,21 @@ from ..providers.base import Usage
 
 
 @dataclass(frozen=True)
+class ConversationTurn:
+    """A prior turn's scripted question and answer, decoupled from the
+    gold-set schema so a pipeline never has to import evals.goldset."""
+
+    question: str
+    answer: str
+
+
+@dataclass(frozen=True)
 class Query:
     question: str
     doc_hint: str
     cross_document: bool = False
+    history: list[ConversationTurn] = field(default_factory=list)
+    collection: str | None = None
 
 
 @dataclass(frozen=True)

@@ -1,0 +1,33 @@
+version: 3
+collection: rules
+corpus_hashes:
+  fb_rules.pdf: "sha256:971813fd51ef91877761f48522bbf337d11f36cfba6f2acd579720d4a8cae277"
+  smg.md: "sha256:088bd4fbae73394fbc20e7fc80a7f2976a95c7282111b9008f83b617759d0724"
+  tiptronic.md: "sha256:a23044ca9152372d3efd0563d001809d2cd708e337d3c85793bfa1355d535433"
+
+entries:
+  - id: q-001
+    turns:
+      - question: "In what year did BMW coin the concept of the Sequential Manual Gearbox?"
+    expected_answer: "1996."
+    sources:
+      - doc: smg.md
+        answer_location: { type: line_range, start: 11, end: 11 }
+    tags: [not-in-collection]
+    # answerable from smg.md, which is a member of the transmissions and
+    # everything collections but not of rules. Under a rules-only scope the
+    # correct behavior is refusal; the doc/location above records where the
+    # real answer lives so the entry can also be run under a collection that
+    # includes smg.md to confirm it is answered correctly there.
+
+  - id: q-002
+    turns:
+      - question: "What torque was the ZF 5HP19 rated for, and what was it rated for in the beefier versions?"
+    expected_answer: "It was rated for up to 300 Nm of torque, or 370 Nm in the beefier versions."
+    sources:
+      - doc: tiptronic.md
+        answer_location: { type: line_range, start: 15, end: 15 }
+    tags: [not-in-collection]
+    # answerable from tiptronic.md, a member of transmissions and everything
+    # but not of rules. Same logic as q-001: refused under rules, answered
+    # correctly under a collection that includes tiptronic.md.

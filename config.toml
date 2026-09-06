@@ -28,3 +28,12 @@ concurrency = 5
 # answer model already refuses correctly on its own (100% in Phase 0).
 top_k = 5
 score_threshold = 0.35
+
+[collections]
+# Named lists of document names. A document may appear in several
+# collections; a document in none is indexed but unreachable by any scoped
+# query (raglab index warns about this). Retrieval scopes to a collection,
+# never to a single document.
+rules = ["fb_rules.pdf"]
+transmissions = ["amg_mct.md", "egear.md", "smg.md", "tiptronic.md"]
+everything = ["fb_rules.pdf", "amg_mct.md", "egear.md", "smg.md", "tiptronic.md"]

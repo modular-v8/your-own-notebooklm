@@ -27,7 +27,9 @@ class Retriever:
         self.store = store
         self.embedder = embedder or Embedder()
 
-    def search(self, query: str, k: int = DEFAULT_TOP_K) -> list[RetrievedChunk]:
+    def search(
+        self, query: str, k: int = DEFAULT_TOP_K, collection: str | None = None
+    ) -> list[RetrievedChunk]:
         manifest = self.store.load_manifest()
         if manifest.embedding_model != self.embedder.model_id or manifest.dimension != self.embedder.dimension:
             raise EmbeddingMismatchError(
@@ -39,7 +41,7 @@ class Retriever:
         if norm > 0:
             query_vector = query_vector / norm
 
-        hits = self.store.search(query_vector, k)
+        hits = self.store.search(query_vector, k, collection=collection)
         return [
             RetrievedChunk(
                 chunk_id=chunk.chunk_id,

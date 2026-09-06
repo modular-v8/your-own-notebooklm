@@ -1,8 +1,10 @@
-"""Retrieval pipeline: search the whole corpus, answer from retrieved chunks only.
+"""Retrieval pipeline: search the active collection, answer from retrieved chunks only.
 
-`doc_hint` is ignored — retrieval always searches every indexed document,
-per spec. A gold entry's `doc` becomes ground truth for scoring, never a
-filter narrowing the search.
+`doc_hint` is ignored — retrieval always searches every document in the
+active collection, per spec. A gold entry's `doc` becomes ground truth for
+scoring, never a filter narrowing the search. Conversation history reaches
+the model but never the retriever: retrieval always runs on the final
+turn's raw question alone -- see pipelines/base.py.
 """
 
 from __future__ import annotations
@@ -12,7 +14,7 @@ import time
 from ..evals.citations import parse_citations, strip_citations_block
 from ..providers.base import LLMProvider, Message, Usage
 from ..retrieval.retriever import RetrievedChunk, Retriever
-from .base import PipelineResult, Query
+from .base import ConversationTurn, PipelineResult, Query
 
 DEFAULT_TOP_K = 5
 DEFAULT_SCORE_THRESHOLD = 0.35
@@ -55,15 +57,19 @@ class RetrievalPipeline:
         self.top_k = top_k
         self.score_threshold = score_threshold
 
-    def _build_messages(self, question: str, chunks: list[RetrievedChunk]) -> list[Message]:
+    def _build_messages(
+        self, history: list[ConversationTurn], question: str, chunks: list[RetrievedChunk]
+    ) -> list[Message]:
         excerpts = "\n\n".join(f"[{c.chunk_id}] ({c.doc})\n{c.text}" for c in chunks)
-        return [
-            Message(role="system", content=SYSTEM_PROMPT),
-            Message(role="user", content=f"EXCERPTS:\n{excerpts}\n\nQUESTION:\n{question}"),
-        ]
+        messages = [Message(role="system", content=SYSTEM_PROMPT)]
+        for turn in history:
+            messages.append(Message(role="user", content=turn.question))
+            messages.append(Message(role="assistant", content=turn.answer))
+        messages.append(Message(role="user", content=f"EXCERPTS:\n{excerpts}\n\nQUESTION:\n{question}"))
+        return messages
 
     async def answer(self, query: Query) -> PipelineResult:
-        chunks = self.retriever.search(query.question, k=self.top_k)
+        chunks = self.retriever.search(query.question, k=self.top_k, collection=query.collection)
         relevant = [c for c in chunks if c.score >= self.score_threshold]
 
         if not relevant:
@@ -75,7 +81,7 @@ class RetrievalPipeline:
                 retrieved=[],
             )
 
-        messages = self._build_messages(query.question, relevant)
+        messages = self._build_messages(query.history, query.question, relevant)
         await self.provider.check_over_context(messages)
 
         start = time.perf_counter()

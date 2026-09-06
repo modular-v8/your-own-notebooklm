@@ -1,10 +1,14 @@
-version: 2
+version: 3
+collection: transmissions
 corpus_hashes:
   tiptronic.md: sha256:a23044ca9152372d3efd0563d001809d2cd708e337d3c85793bfa1355d535433
 entries:
 - id: q-001
-  question: What torque was the ZF 5HP19 rated for, and what was it rated for in the beefier versions?
-  expected_answer: It was rated for up to 300 Nm of torque, or 370 Nm in the beefier versions.
+  turns:
+  - question: What torque was the ZF 5HP19 rated for, and what was it rated for in
+      the beefier versions?
+  expected_answer: It was rated for up to 300 Nm of torque, or 370 Nm in the beefier
+    versions.
   sources:
   - doc: tiptronic.md
     answer_location:
@@ -15,7 +19,9 @@ entries:
   - factual
   - direct-lookup
 - id: q-002
-  question: How much heavier was a Tiptronic-equipped 996 compared to the same car with a manual gearbox?
+  turns:
+  - question: How much heavier was a Tiptronic-equipped 996 compared to the same car
+      with a manual gearbox?
   expected_answer: Roughly 31 kg heavier.
   sources:
   - doc: tiptronic.md
@@ -27,10 +33,13 @@ entries:
   - factual
   - direct-lookup
 - id: q-003
-  question: Is Tiptronic a specific type of transmission mechanism, or something else?
-  expected_answer: It's a trademark, not a mechanism. Tiptronic was Porsche's name for an ordinary torque-converter
-    automatic with a manual override gate, and it was even built around two physically different transmissions
-    over time (a ZF unit, then a Mercedes-Benz 722.6) while keeping the same badge — the name describes
+  turns:
+  - question: Is Tiptronic a specific type of transmission mechanism, or something
+      else?
+  expected_answer: It's a trademark, not a mechanism. Tiptronic was Porsche's name
+    for an ordinary torque-converter automatic with a manual override gate, and it
+    was even built around two physically different transmissions over time (a ZF unit,
+    then a Mercedes-Benz 722.6) while keeping the same badge — the name describes
     a way of driving, not a particular set of internals.
   sources:
   - doc: tiptronic.md
@@ -44,10 +53,12 @@ entries:
   - factual
   - synthesis
 - id: q-004
-  question: Does Porsche still sell a Tiptronic-badged transmission today, and if so, where?
-  expected_answer: Yes. Even though the rest of Porsche's lineup has moved to PDK, the torque-converter
-    Tiptronic S is still offered in the Cayenne, because torque converters handle sustained towing loads
-    better than a dual-clutch box does.
+  turns:
+  - question: Does Porsche still sell a Tiptronic-badged transmission today, and if
+      so, where?
+  expected_answer: Yes. Even though the rest of Porsche's lineup has moved to PDK,
+    the torque-converter Tiptronic S is still offered in the Cayenne, because torque
+    converters handle sustained towing loads better than a dual-clutch box does.
   sources:
   - doc: tiptronic.md
     answer_location:
@@ -58,11 +69,13 @@ entries:
   - synthesis
   - easily-conflated
 - id: q-005
-  question: Did every manufacturer's Tiptronic-style manual mode give the computer final override authority
-    over the driver?
-  expected_answer: Not every one. Most did, but Aston Martin's version in the DB9 loosened that leash
-    further, holding a gear at redline instead of shifting up for the driver and blipping the throttle
-    on downshifts, giving the driver more actual authority than Porsche's own original design did.
+  turns:
+  - question: Did every manufacturer's Tiptronic-style manual mode give the computer
+      final override authority over the driver?
+  expected_answer: Not every one. Most did, but Aston Martin's version in the DB9
+    loosened that leash further, holding a gear at redline instead of shifting up
+    for the driver and blipping the throttle on downshifts, giving the driver more
+    actual authority than Porsche's own original design did.
   sources:
   - doc: tiptronic.md
     answer_location:
@@ -73,12 +86,14 @@ entries:
   - buried-detail
   - exception
 - id: q-006
-  question: In Audi's five-speed Tiptronic, does selecting manual mode give the driver full control over
-    every gear change?
-  expected_answer: No. Even in manual mode it still automatically upshifts from first to second and second
-    to third when pulling away, only handing control back to the driver for third-to-fourth and fourth-to-fifth.
-    It will also still upshift on its own if the driver holds a gear to the redline, and downshifts on
-    deceleration happen automatically too.
+  turns:
+  - question: In Audi's five-speed Tiptronic, does selecting manual mode give the
+      driver full control over every gear change?
+  expected_answer: No. Even in manual mode it still automatically upshifts from first
+    to second and second to third when pulling away, only handing control back to
+    the driver for third-to-fourth and fourth-to-fifth. It will also still upshift
+    on its own if the driver holds a gear to the redline, and downshifts on deceleration
+    happen automatically too.
   sources:
   - doc: tiptronic.md
     answer_location:
@@ -89,10 +104,11 @@ entries:
   - adversarial
   - factual
 - id: q-007
-  question: How many shift maps did the ZF control unit use compared to the Mercedes-Benz 722.6 that replaced
-    it?
-  expected_answer: The ZF control unit worked from a handful of roughly five shift maps, while the 722.6
-    shipped with something like 250 of them.
+  turns:
+  - question: How many shift maps did the ZF control unit use compared to the Mercedes-Benz
+      722.6 that replaced it?
+  expected_answer: The ZF control unit worked from a handful of roughly five shift
+    maps, while the 722.6 shipped with something like 250 of them.
   sources:
   - doc: tiptronic.md
     answer_location:
@@ -103,10 +119,12 @@ entries:
   - synthesis
   - quantitative
 - id: q-008
-  question: Why did Porsche replace the ZF Tiptronic with the Mercedes-Benz 722.6 starting in 2002?
-  expected_answer: When the 996.2 generation 911 moved to bigger, more powerful engines, the ZF Tiptronic
-    apparently couldn't handle the extra torque reliably, so Porsche switched to the Mercedes-Benz 722.6
-    instead.
+  turns:
+  - question: Why did Porsche replace the ZF Tiptronic with the Mercedes-Benz 722.6
+      starting in 2002?
+  expected_answer: When the 996.2 generation 911 moved to bigger, more powerful engines,
+    the ZF Tiptronic apparently couldn't handle the extra torque reliably, so Porsche
+    switched to the Mercedes-Benz 722.6 instead.
   sources:
   - doc: tiptronic.md
     answer_location:
@@ -117,14 +135,17 @@ entries:
   - factual
   - buried-detail
 - id: q-009
-  question: What fuel economy figures does the document report for a Tiptronic-equipped 911 compared to
-    the manual version?
+  turns:
+  - question: What fuel economy figures does the document report for a Tiptronic-equipped
+      911 compared to the manual version?
   expected_answer: null
   sources: []
   tags:
   - not-in-document
 - id: q-010
-  question: How much does a Tiptronic fluid change typically cost at an independent shop?
+  turns:
+  - question: How much does a Tiptronic fluid change typically cost at an independent
+      shop?
   expected_answer: null
   sources: []
   tags:
