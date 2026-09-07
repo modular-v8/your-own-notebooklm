@@ -10,10 +10,11 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from raglab.corpus import load_document
-from raglab.index.builder import IndexBuilder
-from raglab.index.store import NumpyStore
+from raglab.index.builder import ChunkingMismatchError, IndexBuilder
+from raglab.index.store import ChunkerSettings, NumpyStore
 
 
 class _FakeEmbedder:
@@ -139,3 +140,40 @@ def test_parser_failure_is_recorded_and_other_documents_still_index(tmp_path):
     manifest = store.load_manifest()
     assert "good.md" in manifest.documents
     assert "broken.pdf" not in manifest.documents
+
+
+def test_structure_strategy_records_itself_in_the_manifest(tmp_path):
+    corpus_dir = tmp_path / "corpus"
+    corpus_dir.mkdir()
+    _write(corpus_dir / "a.md", "# Heading One\nSome content.\n# Heading Two\nMore content.\n")
+
+    store = NumpyStore(tmp_path / "index")
+    chunking = ChunkerSettings(strategy="structure", size=2000, overlap=150)
+    documents = {"a.md": load_document(corpus_dir / "a.md")}
+
+    IndexBuilder(store, _FakeEmbedder(), chunking=chunking).build(documents)
+
+    manifest = store.load_manifest()
+    assert manifest.chunker == chunking
+    chunks = store.load_chunks()
+    assert [c.text.splitlines()[0] for c in chunks] == ["# Heading One", "# Heading Two"]
+
+
+def test_chunking_mismatch_refuses_to_overwrite(tmp_path):
+    corpus_dir = tmp_path / "corpus"
+    corpus_dir.mkdir()
+    _write(corpus_dir / "a.md", "Some content. " * 100)
+
+    store = NumpyStore(tmp_path / "index")
+    documents = {"a.md": load_document(corpus_dir / "a.md")}
+    fixed = ChunkerSettings(strategy="fixed", size=900, overlap=150)
+    IndexBuilder(store, _FakeEmbedder(), chunking=fixed).build(documents)
+
+    chunks_before = store.load_chunks()
+
+    structure = ChunkerSettings(strategy="structure", size=2000, overlap=150)
+    with pytest.raises(ChunkingMismatchError):
+        IndexBuilder(store, _FakeEmbedder(), chunking=structure).build(documents)
+
+    # Refused before writing anything -- the store is untouched.
+    assert store.load_chunks() == chunks_before

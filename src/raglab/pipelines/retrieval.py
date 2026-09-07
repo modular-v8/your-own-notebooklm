@@ -3,8 +3,11 @@
 `doc_hint` is ignored — retrieval always searches every document in the
 active collection, per spec. A gold entry's `doc` becomes ground truth for
 scoring, never a filter narrowing the search. Conversation history reaches
-the model but never the retriever: retrieval always runs on the final
-turn's raw question alone -- see pipelines/base.py.
+the model but never the retriever by default: retrieval runs on the final
+turn's raw question alone unless a `QueryRewriter` is configured -- see
+pipelines/base.py and retrieval/rewriter.py. Rewriting only changes the
+*retrieval query*; the answer call still gets the raw history and the raw
+final question, exactly as before.
 """
 
 from __future__ import annotations
@@ -13,7 +16,10 @@ import time
 
 from ..evals.citations import parse_citations, strip_citations_block
 from ..providers.base import LLMProvider, Message, Usage
-from ..retrieval.retriever import RetrievedChunk, Retriever
+from ..retrieval.fusion import DEFAULT_RRF_K
+from ..retrieval.reranker import Reranker
+from ..retrieval.retriever import RetrievalMode, RetrievedChunk, Retriever
+from ..retrieval.rewriter import QueryRewriter
 from .base import ConversationTurn, PipelineResult, Query
 
 DEFAULT_TOP_K = 5
@@ -51,11 +57,21 @@ class RetrievalPipeline:
         *,
         top_k: int = DEFAULT_TOP_K,
         score_threshold: float = DEFAULT_SCORE_THRESHOLD,
+        mode: RetrievalMode = "dense",
+        candidate_k: int | None = None,
+        rrf_k: int = DEFAULT_RRF_K,
+        reranker: Reranker | None = None,
+        rewriter: QueryRewriter | None = None,
     ):
         self.provider = provider
         self.retriever = retriever
         self.top_k = top_k
         self.score_threshold = score_threshold
+        self.mode = mode
+        self.candidate_k = candidate_k
+        self.rrf_k = rrf_k
+        self.reranker = reranker
+        self.rewriter = rewriter
 
     def _build_messages(
         self, history: list[ConversationTurn], question: str, chunks: list[RetrievedChunk]
@@ -69,8 +85,26 @@ class RetrievalPipeline:
         return messages
 
     async def answer(self, query: Query) -> PipelineResult:
-        chunks = self.retriever.search(query.question, k=self.top_k, collection=query.collection)
-        relevant = [c for c in chunks if c.score >= self.score_threshold]
+        rewritten_query = None
+        if self.rewriter is not None:
+            rewritten_query = await self.rewriter.rewrite(query.history, query.question)
+        retrieval_query = rewritten_query if rewritten_query is not None else query.question
+
+        search_kwargs = dict(
+            k=self.top_k, collection=query.collection, candidate_k=self.candidate_k, reranker=self.reranker
+        )
+        if self.mode == "hybrid":
+            chunks = self.retriever.search(retrieval_query, mode="hybrid", rrf_k=self.rrf_k, **search_kwargs)
+        else:
+            chunks = self.retriever.search(retrieval_query, **search_kwargs)
+
+        # RRF's fused score and a cross-encoder's rerank score each live on
+        # their own scale, not cosine similarity -- score_threshold only
+        # means anything for plain dense search. Hybrid fusion and
+        # reranking both already discard non-matches on their own terms, so
+        # an empty `chunks` list is itself the "nothing relevant" signal.
+        rescored = self.mode == "hybrid" or self.reranker is not None
+        relevant = chunks if rescored else [c for c in chunks if c.score >= self.score_threshold]
 
         if not relevant:
             return PipelineResult(
@@ -79,8 +113,12 @@ class RetrievalPipeline:
                 usage=Usage(input_tokens=0, output_tokens=0),
                 latency_s=0.0,
                 retrieved=[],
+                rewritten_query=rewritten_query,
             )
 
+        # The answer call always gets the raw history and the raw final
+        # question, unchanged by rewriting -- only the retrieval query above
+        # is affected. See module docstring.
         messages = self._build_messages(query.history, query.question, relevant)
         await self.provider.check_over_context(messages)
 
@@ -99,4 +137,5 @@ class RetrievalPipeline:
             request_params=completion.request_params,
             retrieved=[c.chunk_id for c in relevant],
             cited=cited,
+            rewritten_query=rewritten_query,
         )

@@ -1,0 +1,1782 @@
+{
+  "run_id": "2026-09-06T20-35-54Z-phase4_fb_rules_baseline",
+  "started_at": "2026-09-06T20:35:54.515970+00:00",
+  "duration_s": 293.792865899999,
+  "config": {
+    "pipeline": "retrieval",
+    "collection": "everything",
+    "answer": {
+      "provider": "agent_sdk",
+      "model": "claude-sonnet-5",
+      "params": {}
+    },
+    "judge": {
+      "provider": "agent_sdk",
+      "model": "claude-opus-5",
+      "params": {}
+    },
+    "concurrency": 5,
+    "experiment": {
+      "name": "baseline",
+      "chunking": {
+        "strategy": "fixed",
+        "size": 900,
+        "overlap": 150
+      },
+      "retrieval": {
+        "mode": "dense",
+        "k": 5,
+        "candidate_k": null,
+        "rrf_k": null
+      },
+      "rewriting": null,
+      "reranking": null,
+      "agentic": null
+    }
+  },
+  "gold_set": {
+    "path": "evals\\gold\\fb_rules.yaml",
+    "version": 3,
+    "entry_count": 57,
+    "entry_ids_fingerprint": "a60b432877e963b1"
+  },
+  "corpus_hashes": {
+    "fb_rules.pdf": "sha256:971813fd51ef91877761f48522bbf337d11f36cfba6f2acd579720d4a8cae277",
+    "smg.md": "sha256:088bd4fbae73394fbc20e7fc80a7f2976a95c7282111b9008f83b617759d0724",
+    "amg_mct.md": "sha256:4fc1ee447eb2c91a1d8d342c159d691513404558c11556c089d9c06ff25a6c7d",
+    "egear.md": "sha256:8ca8ca8f09e657e1b54ee07dff74334d746a7fbe52c44c7488a5873ee83516ae",
+    "tiptronic.md": "sha256:a23044ca9152372d3efd0563d001809d2cd708e337d3c85793bfa1355d535433"
+  },
+  "aggregates": {
+    "grounded_rate": 0.9622641509433962,
+    "refusal_correct_rate": 1.0,
+    "graded": 57,
+    "ungraded": 0,
+    "skipped": 0,
+    "errored": 0,
+    "recall_at_k": 0.7547169811320755,
+    "mrr": 0.6028301886792453,
+    "input_tokens": 183382,
+    "output_tokens": 13701,
+    "p50_latency_s": 11.511346200000844,
+    "citation_precision": 0.7962962962962964,
+    "fabrication_rate": 0.0,
+    "mean_coverage": 0.7044025157232705,
+    "uncited": 0,
+    "by_tag": {
+      "boundary-spanning": {
+        "count": 8,
+        "grounded_rate": 1.0,
+        "refusal_correct_rate": null,
+        "recall_at_k": 1.0,
+        "citation_precision": 0.875,
+        "fabrication_rate": 0.0,
+        "mean_coverage": 0.9583333333333334,
+        "uncited": 0,
+        "mean_input_tokens": 3221.0
+      },
+      "cross-document": {
+        "count": 5,
+        "grounded_rate": 0.8,
+        "refusal_correct_rate": null,
+        "recall_at_k": 0.4,
+        "citation_precision": 0.5,
+        "fabrication_rate": 0.0,
+        "mean_coverage": 0.2,
+        "uncited": 0,
+        "mean_input_tokens": 3227.8
+      },
+      "follow-up": {
+        "count": 10,
+        "grounded_rate": 1.0,
+        "refusal_correct_rate": null,
+        "recall_at_k": 0.5,
+        "citation_precision": 0.7142857142857143,
+        "fabrication_rate": 0.0,
+        "mean_coverage": 0.5,
+        "uncited": 0,
+        "mean_input_tokens": 3193.4
+      },
+      "lexical-anchor": {
+        "count": 9,
+        "grounded_rate": 1.0,
+        "refusal_correct_rate": null,
+        "recall_at_k": 0.7777777777777778,
+        "citation_precision": 0.875,
+        "fabrication_rate": 0.0,
+        "mean_coverage": 0.7777777777777778,
+        "uncited": 0,
+        "mean_input_tokens": 3267.222222222222
+      },
+      "near-duplicate": {
+        "count": 8,
+        "grounded_rate": 0.875,
+        "refusal_correct_rate": null,
+        "recall_at_k": 1.0,
+        "citation_precision": 0.7916666666666666,
+        "fabrication_rate": 0.0,
+        "mean_coverage": 0.8958333333333334,
+        "uncited": 0,
+        "mean_input_tokens": 3340.5
+      },
+      "not-in-document": {
+        "count": 4,
+        "grounded_rate": null,
+        "refusal_correct_rate": 1.0,
+        "recall_at_k": null,
+        "citation_precision": null,
+        "fabrication_rate": 0.0,
+        "mean_coverage": null,
+        "uncited": 0,
+        "mean_input_tokens": 3172.25
+      },
+      "synthesis": {
+        "count": 8,
+        "grounded_rate": 1.0,
+        "refusal_correct_rate": null,
+        "recall_at_k": 0.75,
+        "citation_precision": 0.8055555555555555,
+        "fabrication_rate": 0.0,
+        "mean_coverage": 0.5208333333333334,
+        "uncited": 0,
+        "mean_input_tokens": 3302.875
+      },
+      "vocabulary-mismatch": {
+        "count": 10,
+        "grounded_rate": 1.0,
+        "refusal_correct_rate": null,
+        "recall_at_k": 0.7,
+        "citation_precision": 0.8125,
+        "fabrication_rate": 0.0,
+        "mean_coverage": 0.7,
+        "uncited": 0,
+        "mean_input_tokens": 3098.8
+      }
+    },
+    "by_turn_position": {
+      "follow_up": {
+        "count": 10,
+        "grounded_rate": 1.0,
+        "refusal_correct_rate": null,
+        "recall_at_k": 0.5,
+        "citation_precision": 0.7142857142857143,
+        "fabrication_rate": 0.0,
+        "mean_coverage": 0.5,
+        "uncited": 0,
+        "mean_input_tokens": 3193.4
+      },
+      "standalone": {
+        "count": 47,
+        "grounded_rate": 0.9534883720930233,
+        "refusal_correct_rate": 1.0,
+        "recall_at_k": 0.813953488372093,
+        "citation_precision": 0.8114035087719298,
+        "fabrication_rate": 0.0,
+        "mean_coverage": 0.751937984496124,
+        "uncited": 0,
+        "mean_input_tokens": 3222.2978723404253
+      }
+    }
+  },
+  "entries": [
+    {
+      "id": "q-001",
+      "status": "graded",
+      "answer": "According to the rules, team members must be at least 16 years of age (A4.4.1).",
+      "verdict": "grounded",
+      "rationale": "The candidate states the minimum age is 16 years and cites A4.4.1, matching the expected answer exactly with no fabricated claims.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0056",
+        "fb_rules.pdf:0076",
+        "fb_rules.pdf:0075",
+        "fb_rules.pdf:0003",
+        "fb_rules.pdf:0046"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3281,
+        "output_tokens": 49
+      },
+      "latency_s": 21.438870800000586,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0056"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-002",
+      "status": "graded",
+      "answer": "No — being 16 is a general team membership age requirement, but it is not sufficient on its own to drive. According to the excerpts, team members who will drive the competition vehicle at any time must also present a valid, government-issued driver's license for passenger cars (with photograph), and designated drivers must additionally bring hardcopies of both sides of their license to the competition site, sign a bond, and pay a fee upon registration (A4.5.1, A4.5.2). So age 16 alone (A4.4.1) does not qualify someone to drive — a valid driver's license and the associated registration steps are also required.",
+      "verdict": "grounded",
+      "rationale": "The candidate matches the expected answer's core claim that age 16 alone is insufficient and a valid photo driver's license is also required, and its extra details about A4.5.2 registration steps are attributed to cited excerpts rather than contradicting the source.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0056",
+        "fb_rules.pdf:0083",
+        "fb_rules.pdf:0087",
+        "fb_rules.pdf:0047",
+        "fb_rules.pdf:0084"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3067,
+        "output_tokens": 212
+      },
+      "latency_s": 23.8547765000003,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0056"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-003",
+      "status": "graded",
+      "answer": "The excerpts state that designated drivers must sign a bond and pay a fee upon registration, but the specific fee amount is not given — it says the amount \"shall be mentioned on the competition website closer to the event date.\" So I cannot provide an exact fee figure from the provided material.",
+      "verdict": "refused_correctly",
+      "rationale": "The candidate explicitly states the specific fee amount is not given in the material and declines to provide a figure, rather than inventing a substantive answer.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0077",
+        "fb_rules.pdf:0057",
+        "fb_rules.pdf:0056",
+        "fb_rules.pdf:0071",
+        "fb_rules.pdf:0003"
+      ],
+      "recall_hit": null,
+      "usage": {
+        "input_tokens": 3207,
+        "output_tokens": 122
+      },
+      "latency_s": 24.895912999996654,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0056",
+        "fb_rules.pdf:0057"
+      ],
+      "fabricated": [],
+      "citation_precision": null,
+      "coverage": null
+    },
+    {
+      "id": "q-004",
+      "status": "graded",
+      "answer": "Based on the provided excerpts:\n\n**CV (Combustion-powered) vehicle shutdown circuit (CV4.1.2):**\nThe shutdown circuit is defined as a series connection of at least the following components:\n- LVMS (see T11.3)\n- BSPD (see T11.6)\n- Three shutdown buttons (see T11.4)\n- BOTS (see T6.2)\n- Inertia switch (see T11.5)\n\nAdditionally, per CV4.1.1, the shutdown circuit directly controls all electrical power to the ignition, fuel injectors, and all fuel pumps, and must act through a minimum of two mechanical relays (one for the fuel pump, and at least one for injection and ignition). Per CV4.1.3, all circuits in the shutdown circuit must be designed so that in the de-energized/disconnected state they open the shutdown circuit.\n\n**EV (Electric) vehicle:**\nThe provided excerpts only describe the **charging shutdown circuit** (EV7.2.1), not the general EV tractive system shutdown circuit. For charging specifically, the charging shutdown circuit consists of at least:\n- The charger shutdown button (EV7.1.6)\n- The IMD\n- The AMS\n\nThe shutdown button must be positioned toward the person moving the handcart. If this charging shutdown circuit is opened, the charging system must remain disabled until manually reset (EV7.2.2).\n\nI cannot answer what the general (non-charging) EV tractive system shutdown circuit consists of, as that information is not present in the provided excerpts.",
+      "verdict": "grounded",
+      "rationale": "The candidate exactly matches the expected CV4.1.2 component list, and rather than fabricating the EV6.1.2 chain it explicitly states that information is absent from its excerpts while accurately reporting the related charging shutdown circuit it did retrieve.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0250",
+        "fb_rules.pdf:0251",
+        "fb_rules.pdf:0009",
+        "fb_rules.pdf:0010",
+        "fb_rules.pdf:0307"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3767,
+        "output_tokens": 799
+      },
+      "latency_s": 30.263089600000967,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0250",
+        "fb_rules.pdf:0251",
+        "fb_rules.pdf:0307"
+      ],
+      "fabricated": [],
+      "citation_precision": 0.3333333333333333,
+      "coverage": 0.5
+    },
+    {
+      "id": "q-005",
+      "status": "graded",
+      "answer": "Based on the excerpts, the EV shutdown circuit does appear to include the LVMS, but indirectly rather than by explicit name in the circuit definition.\n\nSpecifically:\n\n- **CV4.1.2** defines the CV shutdown circuit explicitly as \"a series connection of at least the LVMS (see T11.3), the BSPD ..., three shutdown buttons ..., the BOTS ... and the inertia switch,\" directly naming the LVMS.\n- **EV6.1.2** defines the EV shutdown circuit as \"a series connection of at least **two master switches**, three shutdown buttons, the BOTS ..., the IMD, the inertia switch ..., the BSPD ..., all required interlocks and the AMS.\" This does not name the LVMS specifically but refers to \"two master switches.\"\n- Separately, **EV6.2.1** confirms the TSMS (Tractive System Master Switch) must be part of the EV shutdown circuit — that accounts for one of the \"two master switches.\"\n- **T11.2.5** states that for EV only, \"master switches must be mounted next to each other,\" implying that an EV has (at least) two master switches — the TSMS and the LVMS — both of which relate to switches defined under T11.2/T11.3.\n\nSo while the CV rule explicitly names the LVMS in its shutdown circuit definition, the EV rule instead specifies \"two master switches\" generically, with the TSMS confirmed by EV6.2.1 as one of them. The excerpts imply the LVMS is the second master switch for EVs (consistent with T11.2.5's \"master switches\" plural for EV), but the provided text does not explicitly state \"LVMS\" by name within the EV6.1.2 shutdown circuit definition the way it does for CV.",
+      "verdict": "not_grounded",
+      "rationale": "The candidate leads with the assertion that the EV shutdown circuit 'does appear to include the LVMS' and infers from T11.2.5 that the LVMS is the second master switch, which contradicts the expected 'No' and fabricates a claim the cited sections do not support, despite later hedging.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0250",
+        "fb_rules.pdf:0198",
+        "fb_rules.pdf:0202",
+        "fb_rules.pdf:0302",
+        "fb_rules.pdf:0298"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3331,
+        "output_tokens": 1344
+      },
+      "latency_s": 36.83514830000058,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0250",
+        "fb_rules.pdf:0298",
+        "fb_rules.pdf:0302",
+        "fb_rules.pdf:0198"
+      ],
+      "fabricated": [],
+      "citation_precision": 0.5,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-006",
+      "status": "graded",
+      "answer": "The minimum allowed diameter for the shutdown buttons on both sides of the vehicle is **40 mm** (T11.4.3). No, the cockpit-mounted shutdown button does not share that same minimum — it has a smaller minimum diameter of **24 mm** (T11.4.4).",
+      "verdict": "grounded",
+      "rationale": "The candidate correctly states the 40 mm side-mounted minimum and the 24 mm cockpit minimum with proper section citations, matching the expected answer exactly.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0199",
+        "fb_rules.pdf:0200",
+        "fb_rules.pdf:0234",
+        "fb_rules.pdf:0155",
+        "fb_rules.pdf:0028"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3406,
+        "output_tokens": 119
+      },
+      "latency_s": 13.50331240000014,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0199"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-007",
+      "status": "graded",
+      "answer": "Based on the excerpts, the Impact Attenuator (IA) must satisfy the following minimum dimensions in front of the front bulkhead:\n\n- At least **100 mm high and 200 mm wide** for a minimum distance of **200 mm forward of the front bulkhead**.\n- No portion of the required **100 × 200 × 200 mm³** volume of the IA can be positioned more than **350 mm above the ground**.\n\nAdditionally, the IA:\n- Cannot be wider or higher than the AIP (Anti-Intrusion Plate).\n- Must be designed with a closed front section.",
+      "verdict": "grounded",
+      "rationale": "The candidate states the core 100 mm high, 200 mm wide, 200 mm forward and 350 mm ground-height limits exactly as expected, and the extra AIP-size and closed-front-section remarks are standard adjacent IA rule content rather than claims contradicting the expected answer.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0142",
+        "fb_rules.pdf:0143",
+        "fb_rules.pdf:0262",
+        "fb_rules.pdf:0148",
+        "fb_rules.pdf:0137"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3179,
+        "output_tokens": 216
+      },
+      "latency_s": 16.766570100000536,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0142"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-008",
+      "status": "graded",
+      "answer": "The shoulder harness mounting points must be between 180 mm and 230 mm apart, measured center to center (Rule T5.5.4).",
+      "verdict": "grounded",
+      "rationale": "The candidate states the same 180 mm to 230 mm center-to-center range as the expected answer and correctly attributes it to rule T5.5.4.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0170",
+        "fb_rules.pdf:0172",
+        "fb_rules.pdf:0171",
+        "fb_rules.pdf:0157",
+        "fb_rules.pdf:0168"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3123,
+        "output_tokens": 67
+      },
+      "latency_s": 14.043158799999219,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0171"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-009",
+      "status": "graded",
+      "answer": "The BOTS is not an electronic sensor — it must be a mechanical switch, specifically a \"push-pull, push-rotate or flip type mechanical switch,\" and it may consist of a series connection of switches (T6.2.3).\n\nRegarding resetting: repeated actuation of the switch must not close the shutdown circuit, and it must be designed so that the driver cannot reset it (T6.2.2).",
+      "verdict": "grounded",
+      "rationale": "The candidate accurately states the BOTS must be a mechanical switch of push-pull, push-rotate or flip type rather than an electronic sensor, may be a series connection of switches, cannot be reset by the driver, and that repeated actuation must not close the shutdown circuit — all consistent with the expected answer, with only a minor swap of the two cited section labels.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0177",
+        "fb_rules.pdf:0201",
+        "fb_rules.pdf:0178",
+        "fb_rules.pdf:0207",
+        "tiptronic.md:0006"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3149,
+        "output_tokens": 152
+      },
+      "latency_s": 17.49449370000002,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0178"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-010",
+      "status": "graded",
+      "answer": "I cannot answer this from the provided material. The excerpts do not contain any information about the entry fee for registering a team in the Formula Bharat competition.",
+      "verdict": "refused_correctly",
+      "rationale": "The candidate explicitly declines to answer and states that the provided excerpts contain no information about the entry fee, offering no substantive answer.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0056",
+        "fb_rules.pdf:0044",
+        "fb_rules.pdf:0076",
+        "fb_rules.pdf:0079",
+        "fb_rules.pdf:0002"
+      ],
+      "recall_hit": null,
+      "usage": {
+        "input_tokens": 3317,
+        "output_tokens": 57
+      },
+      "latency_s": 16.55574229999911,
+      "error": null,
+      "cited": [],
+      "fabricated": [],
+      "citation_precision": null,
+      "coverage": null
+    },
+    {
+      "id": "q-011",
+      "status": "graded",
+      "answer": "Based on the provided excerpts, the acronym \"BSPD\" is not explicitly spelled out (the full expansion of the name is not given in the retrieved material), so I cannot confirm what the letters stand for from this content alone.\n\nHowever, the excerpts do describe what the BSPD is required to do:\n\n- **Function/Purpose**: The BSPD monitors for an implausibility between braking and throttle/power delivery. Specifically, it must open the shutdown circuit if \"hard braking\" occurs while the throttle position is more than 25% over idle position [fb_rules.pdf:0202].\n- **Timing requirements**: The shutdown circuit must open if this implausible condition persists for more than 500 ms, and once opened, it must remain open until the LVMS is power-cycled (it cannot reset itself just because the condition clears, unless more than 10 s have passed) [fb_rules.pdf:0202].\n- **Power supply**: It must be directly supplied from the LVMS [fb_rules.pdf:0202].\n- **Standalone design**: It must be a standalone system with no additional functionality on its PCBs — interfaces reduced to the minimum necessary signals (power supply, required sensors, and the shutdown circuit), with sensor/supply signals not routed through other devices before entering the BSPD [fb_rules.pdf:0202].\n- **Hard braking detection**: A brake system pressure sensor must be used, with a threshold chosen so there are no locked wheels and brake pressure is ≤30 bar [fb_rules.pdf:0203].\n- **Power delivery detection (EV only)**: A DC circuit current sensor must be used, with a threshold equivalent to ≤5 kW at maximum TS voltage [fb_rules.pdf:0203].\n- **Inspection/testing (EV only)**: Each sensor signal wire must be separately disconnectable for technical inspection, all necessary signals are classified as System Critical Signals (SCS), and the team must prove BSPD function during technical inspection by sending a signal representing current to achieve ≤5 kW while pressing the brake pedal — this test must validate the entire BSPD except commercially available current sensors [fb_rules.pdf:0203], [fb_rules.pdf:0323].\n- **Installation restriction (EV only)**: The BSPD, including all required sensors, must not be installed inside the accumulator container [fb_rules.pdf:0204].",
+      "verdict": "grounded",
+      "rationale": "The candidate accurately describes the BSPD's required behavior (opening the shutdown circuit on hard braking with >25% throttle or ~5 kW power delivery, staying open until LVMS power-cycle or 10 s reset, standalone design) consistent with the source, and honestly declines to state the acronym expansion rather than fabricating it.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0202",
+        "fb_rules.pdf:0203",
+        "fb_rules.pdf:0324",
+        "fb_rules.pdf:0204",
+        "fb_rules.pdf:0323"
+      ],
+      "recall_hit": false,
+      "usage": {
+        "input_tokens": 3216,
+        "output_tokens": 1103
+      },
+      "latency_s": 24.47740369999883,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0202",
+        "fb_rules.pdf:0203",
+        "fb_rules.pdf:0204",
+        "fb_rules.pdf:0323"
+      ],
+      "fabricated": [],
+      "citation_precision": 0.0,
+      "coverage": 0.0
+    },
+    {
+      "id": "q-012",
+      "status": "graded",
+      "answer": "Every participant, including faculty advisors and volunteers, must provide proof of valid private liability & individual health insurance for the competition (A4.6.1).",
+      "verdict": "grounded",
+      "rationale": "The candidate matches the expected answer exactly, stating that every participant including faculty advisors and volunteers must show proof of valid private liability and individual health insurance, with a correct citation to A4.6.1.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0057",
+        "fb_rules.pdf:0061",
+        "fb_rules.pdf:0060",
+        "fb_rules.pdf:0077",
+        "fb_rules.pdf:0076"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 2994,
+        "output_tokens": 71
+      },
+      "latency_s": 16.961041999998997,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0057"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-013",
+      "status": "graded",
+      "answer": "Rule **T11.4.5** requires that \"the international electrical symbol consisting of a red spark on a white-edged blue triangle must be affixed in close proximity to each shutdown button.\"",
+      "verdict": "grounded",
+      "rationale": "The candidate cites T11.4.5 and describes the red spark on a white-edged blue triangle affixed near each shutdown button, matching the expected answer exactly with no fabricated claims.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0200",
+        "fb_rules.pdf:0305",
+        "fb_rules.pdf:0199",
+        "fb_rules.pdf:0304",
+        "fb_rules.pdf:0277"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3272,
+        "output_tokens": 83
+      },
+      "latency_s": 12.339187199999287,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0199"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-014",
+      "status": "graded",
+      "answer": "I cannot answer this from the provided material. The excerpts do not contain any rule ID related to a minimum age requirement of 16 years (the changelog excerpt shown covers rules A4.8.8 through A5.3.1, none of which pertain to age requirements, and no A4.4 \"Age\" section content is included).",
+      "verdict": "grounded",
+      "rationale": "The candidate asserts nothing false — it explicitly declines to answer because its retrieved excerpts lacked the A4.4.1 content, rather than fabricating a rule ID or age requirement.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0046",
+        "fb_rules.pdf:0002",
+        "fb_rules.pdf:0047",
+        "fb_rules.pdf:0019",
+        "fb_rules.pdf:0040"
+      ],
+      "recall_hit": false,
+      "usage": {
+        "input_tokens": 3622,
+        "output_tokens": 110
+      },
+      "latency_s": 14.543777200000477,
+      "error": null,
+      "cited": [],
+      "fabricated": [],
+      "citation_precision": null,
+      "coverage": 0.0
+    },
+    {
+      "id": "q-016",
+      "status": "graded",
+      "answer": "I cannot answer this from the provided material. None of the excerpts describe a mechanism (such as a pedal guard, brake-throttle override, or similar feature) that addresses a driver's foot slipping past the brake pedal.",
+      "verdict": "grounded",
+      "rationale": "The candidate asserts nothing false; it honestly declines to answer rather than fabricating a mechanism, which per the rubric counts as grounded even though it misses the BOTS detail.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "tiptronic.md:0006",
+        "fb_rules.pdf:0330",
+        "egear.md:0021",
+        "fb_rules.pdf:0207",
+        "egear.md:0023"
+      ],
+      "recall_hit": false,
+      "usage": {
+        "input_tokens": 3032,
+        "output_tokens": 82
+      },
+      "latency_s": 12.160085799998342,
+      "error": null,
+      "cited": [],
+      "fabricated": [],
+      "citation_precision": null,
+      "coverage": 0.0
+    },
+    {
+      "id": "q-017",
+      "status": "graded",
+      "answer": "According to the rules, team members must be at least 16 years of age (rule A4.4.1).",
+      "verdict": "grounded",
+      "rationale": "The candidate states the minimum age is 16, matching the expected answer, and correctly attributes it to rule A4.4.1 without adding unsupported claims.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0046",
+        "fb_rules.pdf:0056",
+        "fb_rules.pdf:0085",
+        "fb_rules.pdf:0004",
+        "fb_rules.pdf:0047"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3254,
+        "output_tokens": 51
+      },
+      "latency_s": 8.36631849999685,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0056"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-018",
+      "status": "graded",
+      "answer": "I cannot answer this from the provided material. The excerpts mention an \"Impact Attenuator (IA)\" defined as \"a deformable, energy absorbing device located forward of the front bulkhead\" (fb_rules.pdf:0098), but none of the excerpts describe or discuss a \"crash box\" specifically or its purpose in detail.",
+      "verdict": "grounded",
+      "rationale": "The candidate accurately quotes the Impact Attenuator definition as a deformable energy-absorbing device forward of the front bulkhead, which is consistent with the expected answer, and honestly declines to state the dimensional and AIP details it lacks rather than fabricating them.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0098",
+        "fb_rules.pdf:0084",
+        "fb_rules.pdf:0185",
+        "fb_rules.pdf:0395",
+        "amg_mct.md:0004"
+      ],
+      "recall_hit": false,
+      "usage": {
+        "input_tokens": 3196,
+        "output_tokens": 119
+      },
+      "latency_s": 9.722881699999562,
+      "error": null,
+      "cited": [],
+      "fabricated": [],
+      "citation_precision": null,
+      "coverage": 0.0
+    },
+    {
+      "id": "q-019",
+      "status": "graded",
+      "answer": "Yes. According to the rules, each participant — including faculty advisors and volunteers — must provide proof of valid private liability & individual health insurance for the competition (A4.6.1).",
+      "verdict": "grounded",
+      "rationale": "The candidate matches the expected answer exactly, affirming that all participants including faculty advisors and volunteers must show proof of private liability and individual health insurance, and cites A4.6.1 without adding unsupported claims.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0077",
+        "fb_rules.pdf:0057",
+        "fb_rules.pdf:0076",
+        "fb_rules.pdf:0085",
+        "fb_rules.pdf:0336"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 2947,
+        "output_tokens": 80
+      },
+      "latency_s": 8.992898799999239,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0057"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-020",
+      "status": "graded",
+      "answer": "Yes. According to the excerpt on shutdown buttons, one shutdown button must be located on each side of the vehicle behind the driver's compartment (at approximately the level of the driver's head), with a minimum diameter of 40 mm, and these buttons \"must be easily reachable from outside the vehicle.\"",
+      "verdict": "grounded",
+      "rationale": "The candidate matches the expected answer on side-mounted shutdown buttons behind the driver's compartment at head height, 40 mm minimum diameter, and reachability from outside the vehicle, with no fabricated claims.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0272",
+        "fb_rules.pdf:0199",
+        "tiptronic.md:0006",
+        "fb_rules.pdf:0277",
+        "egear.md:0023"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3087,
+        "output_tokens": 121
+      },
+      "latency_s": 10.55094409999947,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0199"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-021",
+      "status": "graded",
+      "answer": "Based on the provided excerpts, the following dimensional minimums apply to the Impact Attenuator (IA) and its mounting/attachment:\n\n**Mounting/Attachment to the Anti-Intrusion Plate (AIP):**\n- The IA may be attached to the AIP by a **minimum of four 8 mm metric grade 8.8 bolts**, which are considered critical fasteners (T3.17.5).\n- If adhesive is used for attachment, it must be able to carry a load of **60 kN in any direction** (T3.17.5).\n- If the \"standard\" honeycomb IA is used, the adhesive mounting the IA to the AIP must have a shear strength of **at least 24 MPa** (T3.17.8).\n\n**AIP Positioning:**\n- Where the AIP extends beyond the front bulkhead, it must extend **at least to the centerline of the front bulkhead tubing** in all directions, and must **not extend past the outside edges of the front bulkhead** (T3.17.3, per excerpt fb_rules.pdf:0143).\n\n**Deflection Limit:**\n- If the standard IA is used but does not comply with the adhesive/bolt requirements above, physical testing must prove the AIP does **not permanently deflect more than 25 mm** (T3.17.8).\n\nThe excerpts do not provide the physical length/width/thickness minimum dimensions of the IA itself (e.g., from rule T3.19 on impact testing, only the test parameters — 300 kg vehicle mass, 7 m/s impact velocity — are shown, and the deceleration/other test-result limits are cut off in the retrieved text). I cannot provide those additional details from the material given.",
+      "verdict": "grounded",
+      "rationale": "The candidate accurately reports the four 8 mm grade 8.8 bolt and 60 kN adhesive mounting requirements matching the source, asserts nothing contradicting the expected answer, and explicitly declines to state the IA's 100 mm x 200 mm x 200 mm dimensional minimums rather than fabricating them.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0188",
+        "fb_rules.pdf:0145",
+        "fb_rules.pdf:0262",
+        "fb_rules.pdf:0143",
+        "fb_rules.pdf:0106"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3220,
+        "output_tokens": 1230
+      },
+      "latency_s": 18.626988100000744,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0145",
+        "fb_rules.pdf:0143"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 0.6666666666666666
+    },
+    {
+      "id": "q-022",
+      "status": "graded",
+      "answer": "Yes — a 17-year-old meets the minimum age requirement, since **A4.4.1** states team members must be at least 16 years of age.\n\nHowever, being a minor does trigger extra paperwork beyond what an adult team member needs. Under **A5.8.4**, the team captain is responsible for confirming participation of team members and, on-site, for providing insurance information and uploading insurance scans — but specifically also for uploading **\"under 18 liability waivers' scans (if any)\"**. This means that, in addition to the standard requirements (Student Membership, Team Member Information submission, insurance details, driver's license information if applicable), a 17-year-old member would need an under-18 liability waiver on file/scanned, which adult members do not need to provide.",
+      "verdict": "grounded",
+      "rationale": "The candidate correctly states the minimum age is 16 so a 17-year-old qualifies, and correctly identifies the under-18 liability waiver as the extra requirement not applicable to adults, matching the expected answer despite citing a different section number for the waiver requirement.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0056",
+        "fb_rules.pdf:0076",
+        "fb_rules.pdf:0075",
+        "fb_rules.pdf:0002",
+        "fb_rules.pdf:0003"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3519,
+        "output_tokens": 526
+      },
+      "latency_s": 13.58492479999768,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0056",
+        "fb_rules.pdf:0076"
+      ],
+      "fabricated": [],
+      "citation_precision": 0.5,
+      "coverage": 0.5
+    },
+    {
+      "id": "q-023",
+      "status": "graded",
+      "answer": "Yes. Per T3.17.3, the sizing requirement for the AIP differs based on the attachment method:\n\n- **If bolted** to the front bulkhead: the IA/AIP assembly \"must be the same size as the outside dimensions of the front bulkhead.\"\n- **If welded** to the front bulkhead: it \"must extend at least to the centerline of the front bulkhead tubing in all directions.\"\n\nIn both cases, however, the AIP must not extend past the outside edges of the front bulkhead.",
+      "verdict": "grounded",
+      "rationale": "The candidate matches the expected answer on both the bolted case (same size as front bulkhead outside dimensions) and the welded case (extend at least to centerline of front bulkhead tubing), and correctly notes the AIP must not extend past the outside edges.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0142",
+        "fb_rules.pdf:0144",
+        "fb_rules.pdf:0143",
+        "fb_rules.pdf:0147",
+        "fb_rules.pdf:0145"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3241,
+        "output_tokens": 196
+      },
+      "latency_s": 8.40265780000118,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0142",
+        "fb_rules.pdf:0143"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-024",
+      "status": "graded",
+      "answer": "According to the rules (T5.5.2), if the shoulder harness is mounted to a tube that is not straight, the joints between that tube and the structure it's mounted to must be reinforced in the side view by triangulation tubes to prevent torsional rotation of the harness mounting tube. Supporting calculations are required, and the specified analysis method is: use a 7 kN load per attachment and the range of angles specified in T5.5.5, then calculate that the bent shoulder harness bar triangulation stresses are less than the as-welded yield strength (per T3.2.4, for combined bending and shear) and that the structure does not fail in column buckling.\n\nIf the team chooses not to perform this strength analysis, then T3.2.6 will apply instead (per T5.5.2/T5.5.3).",
+      "verdict": "grounded",
+      "rationale": "The candidate matches the expected answer on all points — triangulation reinforcement in side view, the 7 kN per attachment load with T5.5.5 angles, as-welded yield strength per T3.2.4 for combined bending and shear, no column buckling failure, and T3.2.6 applying if the analysis is skipped — with only a minor added cross-reference to T5.5.3 that asserts nothing inconsistent.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0171",
+        "fb_rules.pdf:0170",
+        "fb_rules.pdf:0157",
+        "fb_rules.pdf:0172",
+        "fb_rules.pdf:0167"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3142,
+        "output_tokens": 289
+      },
+      "latency_s": 10.220461600001727,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0170",
+        "fb_rules.pdf:0171"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-025",
+      "status": "graded",
+      "answer": "According to the rules, the BSPD (Brake System Plausibility Device) must open the shutdown circuit when hard braking occurs, whilst:\n\n1. **[EV ONLY]** ≥5 kW power is delivered to the motors, **or**\n2. **[CV ONLY]** the throttle position is more than 25% over idle position.\n\nFor the shutdown circuit to close again, the shutdown circuit must remain open until the LVMS is power cycled — though the rules note the BSPD may reset itself if the opening condition is no longer present for more than 10 seconds.",
+      "verdict": "grounded",
+      "rationale": "The candidate states both triggering conditions (EV: 5 kW or more to the motors; CV: throttle more than 25% over idle) and the reset behavior (open until LVMS power cycle, with possible self-reset after the condition is absent for more than 10 seconds) exactly as the expected answer does, with no fabricated claims.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0202",
+        "fb_rules.pdf:0201",
+        "fb_rules.pdf:0203",
+        "fb_rules.pdf:0300",
+        "fb_rules.pdf:0299"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3191,
+        "output_tokens": 219
+      },
+      "latency_s": 9.45864050000091,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0201",
+        "fb_rules.pdf:0202"
+      ],
+      "fabricated": [],
+      "citation_precision": 0.5,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-027",
+      "status": "graded",
+      "answer": "The maximum permitted sound level up to the calculated test speed is 110 dB(C), fast weighting. At idle, the maximum permitted sound level is 103 dB(C), fast weighting.",
+      "verdict": "grounded",
+      "rationale": "The candidate states both values (110 dB(C) fast weighting up to the calculated test speed and 103 dB(C) fast weighting at idle) consistent with the expected answer, omitting only the definition of calculated test speed without asserting anything false.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0249",
+        "fb_rules.pdf:0328",
+        "fb_rules.pdf:0009",
+        "fb_rules.pdf:0248",
+        "fb_rules.pdf:0279"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3531,
+        "output_tokens": 86
+      },
+      "latency_s": 9.174993700002233,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0249"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-028",
+      "status": "graded",
+      "answer": "Each team must have at least two dry chemical/dry powder fire extinguishers, with a minimum firefighting agent capacity of 0.9 kg each.",
+      "verdict": "grounded",
+      "rationale": "The candidate matches the expected answer exactly in substance, stating two dry chemical/dry powder extinguishers each with a minimum 0.9 kg firefighting agent capacity, with no fabricated claims.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0224",
+        "fb_rules.pdf:0225",
+        "fb_rules.pdf:0088",
+        "fb_rules.pdf:0160",
+        "fb_rules.pdf:0058"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3187,
+        "output_tokens": 73
+      },
+      "latency_s": 8.889507799998682,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0224"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-029",
+      "status": "graded",
+      "answer": "I cannot answer this from the provided material. The excerpts cover vehicle identification (T12) requirements for vehicle numbers, technical inspection stickers, and general inspection/competition rules, but none of them address rules for sponsor logo or decal placement.",
+      "verdict": "refused_correctly",
+      "rationale": "The candidate explicitly states it cannot answer from the provided material and notes that none of the excerpts address sponsor logo or decal placement, without offering a substantive answer.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0316",
+        "fb_rules.pdf:0315",
+        "fb_rules.pdf:0214",
+        "fb_rules.pdf:0081",
+        "fb_rules.pdf:0084"
+      ],
+      "recall_hit": null,
+      "usage": {
+        "input_tokens": 3088,
+        "output_tokens": 92
+      },
+      "latency_s": 10.201040200001444,
+      "error": null,
+      "cited": [],
+      "fabricated": [],
+      "citation_precision": null,
+      "coverage": null
+    },
+    {
+      "id": "q-030",
+      "status": "graded",
+      "answer": "I cannot answer this from the provided material. The excerpts cover safety practices, disqualification conditions, onsite working safety, and design/cost event procedures, but none of them mention parking permits or trailer permits for vehicles and equipment brought to the competition venue.",
+      "verdict": "refused_correctly",
+      "rationale": "The candidate explicitly declines to answer, stating the provided excerpts do not mention parking or trailer permits, and offers no substantive answer.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0083",
+        "fb_rules.pdf:0084",
+        "fb_rules.pdf:0363",
+        "fb_rules.pdf:0085",
+        "fb_rules.pdf:0344"
+      ],
+      "recall_hit": null,
+      "usage": {
+        "input_tokens": 3077,
+        "output_tokens": 94
+      },
+      "latency_s": 10.564368399998784,
+      "error": null,
+      "cited": [],
+      "fabricated": [],
+      "citation_precision": null,
+      "coverage": null
+    },
+    {
+      "id": "q-036",
+      "status": "graded",
+      "answer": "I cannot answer this from the provided material. The excerpts I have from fb_rules.pdf do not contain a description of a specific power-cutoff/protective system (such as details on the BSPD, AMS, or similar shutdown mechanisms) with enough detail to explain \"what problem it solves.\" Additionally, no excerpts from an \"SMG document\" were provided at all — none of the retrieved chunks reference such a document.\n\nTo answer accurately, I would need excerpts that actually describe the specific system(s) in question from both documents.",
+      "verdict": "grounded",
+      "rationale": "The candidate asserts nothing false — it declines entirely and honestly states its retrieved context lacked both the BOTS description and any SMG excerpts, fabricating no claims inconsistent with the expected answer.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0040",
+        "fb_rules.pdf:0042",
+        "fb_rules.pdf:0000",
+        "fb_rules.pdf:0102",
+        "fb_rules.pdf:0194"
+      ],
+      "recall_hit": false,
+      "usage": {
+        "input_tokens": 3497,
+        "output_tokens": 178
+      },
+      "latency_s": 15.986202699998103,
+      "error": null,
+      "cited": [],
+      "fabricated": [],
+      "citation_precision": null,
+      "coverage": 0.0
+    },
+    {
+      "id": "q-031",
+      "status": "graded",
+      "answer": "There isn't a stated minimum/maximum spacing rule for lap belt and anti-submarine belt mounting points like the shoulder harness one. Instead, the rules specify a load requirement based on spacing: if the lap belts and anti-submarine belts are attached less than 100 mm apart, the attachment points must support a total load of 19.5 kN (as opposed to the standard 13 kN for shoulder/lap belts and 6.5 kN for anti-submarine belts individually).",
+      "verdict": "grounded",
+      "rationale": "The candidate states the same conditional load rule — attachment points less than 100 mm apart must support 19.5 kN — and correctly notes there is no spacing minimum, with the added 13 kN/6.5 kN figures being consistent context from the same attachment-load section rather than contradictory claims.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0172",
+        "fb_rules.pdf:0166",
+        "fb_rules.pdf:0156",
+        "fb_rules.pdf:0169",
+        "fb_rules.pdf:0168"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3323,
+        "output_tokens": 180
+      },
+      "latency_s": 10.05579139999827,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0156"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-032",
+      "status": "graded",
+      "answer": "I don't have information about SMG II (the generation before SMG III) in the provided excerpts. The material I have only describes SMG I — which debuted in the E36 M3 and was developed jointly by BMW, Getrag, and Sachs, drawing on technology from BMW's Williams Formula One cars, but was noted as a rough first attempt that was relatively fragile and unreliable. It doesn't give details on SMG II, so I can't answer that part from the provided material.",
+      "verdict": "grounded",
+      "rationale": "The candidate asserts nothing inconsistent with the expected answer, accurately reports only the SMG I details its excerpts contain, and explicitly declines to speculate about SMG II rather than fabricating it.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "smg.md:0001",
+        "fb_rules.pdf:0046",
+        "fb_rules.pdf:0072",
+        "egear.md:0016",
+        "fb_rules.pdf:0040"
+      ],
+      "recall_hit": false,
+      "usage": {
+        "input_tokens": 3216,
+        "output_tokens": 423
+      },
+      "latency_s": 11.901418700002978,
+      "error": null,
+      "cited": [
+        "smg.md:0001"
+      ],
+      "fabricated": [],
+      "citation_precision": 0.0,
+      "coverage": 0.0
+    },
+    {
+      "id": "q-033",
+      "status": "graded",
+      "answer": "I cannot answer this from the provided material. The excerpts don't contain a direct numerical comparison between the AMG SpeedShift MCT's shift times and those of a \"proper\" dual-clutch transmission. The tiptronic.md excerpt mentions that Porsche's PDK is a genuinely different, dual-clutch transmission \"much loved thanks to its dual-clutch construction,\" but it explicitly declines to go deep into PDK details, and no shift-time comparison is given. The egear.md excerpts discuss Lamborghini's e-gear (a single-clutch automated manual) versus dual-clutch systems generally, noting e-gear \"does not shift as smoothly as a dual clutch at low speed,\" but this doesn't address the MCT specifically.",
+      "verdict": "grounded",
+      "rationale": "The candidate asserts nothing inconsistent with the expected answer and instead honestly declines because its retrieved excerpts lacked the MCT-versus-DCT shift-time comparison, accurately characterizing what the other documents do and do not say.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "amg_mct.md:0003",
+        "egear.md:0010",
+        "tiptronic.md:0008",
+        "egear.md:0023",
+        "egear.md:0002"
+      ],
+      "recall_hit": false,
+      "usage": {
+        "input_tokens": 2986,
+        "output_tokens": 276
+      },
+      "latency_s": 12.646881999997277,
+      "error": null,
+      "cited": [
+        "tiptronic.md:0008",
+        "egear.md:0010"
+      ],
+      "fabricated": [],
+      "citation_precision": 0.0,
+      "coverage": 0.0
+    },
+    {
+      "id": "q-034",
+      "status": "graded",
+      "answer": "I cannot answer this from the provided material. The excerpts don't state a specific shift-speed figure (like \"50 milliseconds\") for the Aventador's ISR gearbox, nor do they give a specific shift time for the Gallardo's e-gear. What they do say is that Lamborghini claimed the ISR cut shift times by roughly 40% compared to a conventional single-rod automated manual (the same core system used in the Gallardo's e-gear), but no comparable standalone millisecond figure is given for the Gallardo's version in these excerpts.",
+      "verdict": "grounded",
+      "rationale": "The candidate accurately conveys that the Gallardo's e-gear is the conventional single-rod automated manual the ISR improved on by roughly 40%, and honestly declines to give a millisecond figure the source does not provide, asserting nothing inconsistent with the expected answer.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "egear.md:0008",
+        "egear.md:0016",
+        "egear.md:0012",
+        "egear.md:0017",
+        "egear.md:0010"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 2949,
+        "output_tokens": 196
+      },
+      "latency_s": 10.391912200000661,
+      "error": null,
+      "cited": [
+        "egear.md:0010"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-035",
+      "status": "graded",
+      "answer": "The excerpts don't specify a weight or performance trade-off for the Cayenne's Tiptronic S. They only explain that Porsche kept the torque-converter Tiptronic S alive in the Cayenne because torque converters handle sustained towing loads better than a dual-clutch (PDK) box, which is why the Cayenne can tow 7,700 lb versus under 5,000 lb for the PDK-only Macan. There's no mention in the provided material of a weight difference or a manual-vs-automatic weight trade-off for the Cayenne specifically, so I can't answer that part from the given excerpts.",
+      "verdict": "grounded",
+      "rationale": "The candidate accurately reproduces the towing/torque-converter trade-off and the 7,700 lb vs under 5,000 lb figures from the source, and correctly declines to state a weight trade-off that the source does not provide.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "tiptronic.md:0010",
+        "tiptronic.md:0009",
+        "egear.md:0008",
+        "tiptronic.md:0008",
+        "egear.md:0024"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3038,
+        "output_tokens": 219
+      },
+      "latency_s": 11.55966040000203,
+      "error": null,
+      "cited": [
+        "tiptronic.md:0010"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-037",
+      "status": "graded",
+      "answer": "I cannot answer this from the provided material — the excerpts do not mention a maximum deflection limit for the impact attenuator test.",
+      "verdict": "grounded",
+      "rationale": "The candidate asserts nothing false and honestly declines to answer, stating the retrieved excerpts lack the deflection limit rather than fabricating a value.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0148",
+        "fb_rules.pdf:0390",
+        "fb_rules.pdf:0322",
+        "fb_rules.pdf:0149",
+        "fb_rules.pdf:0150"
+      ],
+      "recall_hit": false,
+      "usage": {
+        "input_tokens": 3470,
+        "output_tokens": 51
+      },
+      "latency_s": 8.38093960000333,
+      "error": null,
+      "cited": [],
+      "fabricated": [],
+      "citation_precision": null,
+      "coverage": 0.0
+    },
+    {
+      "id": "q-038",
+      "status": "graded",
+      "answer": "Based on the excerpts, the LVMS and TSMS use **different** warning symbols:\n\n- The **LVMS** must be marked with \"LV\" and a symbol showing **a red spark in a white-edged blue triangle** (T11.3.3).\n- The **TSMS** must be marked with \"TS\" and a symbol according to **ISO 7010-W012** (a triangle with a black lightning bolt on a yellow background) (EV6.2.4).\n\nThe provided excerpts do not specify what symbol marks the shutdown buttons themselves, so I cannot confirm from this material whether either switch shares a symbol with the shutdown buttons specifically — only that the LVMS and TSMS symbols differ from each other.",
+      "verdict": "grounded",
+      "rationale": "The candidate accurately states the LVMS red-spark-on-blue-triangle symbol and the TSMS ISO 7010-W012 symbol consistent with the expected answer, and honestly declines to claim anything about the shutdown buttons' symbol rather than fabricating it.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0198",
+        "fb_rules.pdf:0302",
+        "fb_rules.pdf:0091",
+        "fb_rules.pdf:0297",
+        "fb_rules.pdf:0299"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3308,
+        "output_tokens": 267
+      },
+      "latency_s": 11.10111649999817,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0198",
+        "fb_rules.pdf:0302"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 0.6666666666666666
+    },
+    {
+      "id": "q-039",
+      "status": "graded",
+      "answer": "No — when lap belts and anti-submarine belts are attached less than 100 mm apart, the requirement is different: those attachments must together support a total load of 19.5 kN (T4.5.4), not the 13 kN specified for shoulder and lap belt attachments generally (T4.5.3).",
+      "verdict": "grounded",
+      "rationale": "The candidate correctly states that lap and anti-submarine belt attachments less than 100 mm apart must together support 19.5 kN per T4.5.4 rather than the 13 kN of T4.5.3, matching the expected answer without fabrication.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0156",
+        "fb_rules.pdf:0172",
+        "fb_rules.pdf:0168",
+        "fb_rules.pdf:0171",
+        "fb_rules.pdf:0166"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3274,
+        "output_tokens": 117
+      },
+      "latency_s": 10.473255199998675,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0156"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-040",
+      "status": "graded",
+      "answer": "Not quite the same situation. According to T2.6.5, if a team uses a single set of tires designed for both \"dry\" and \"wet\" conditions but they don't meet the tread/groove requirements of T2.5.1 (or have no tread/grooves), those tires are **not considered \"wet\" tires** — but they **can still be used as dry tires**.\n\nThis differs from a dedicated wet tire (one specifically constructed by the manufacturer for wet conditions per T2.6.6): those can *only* be used under \"Damp\" or \"Wet\" conditions and **cannot** be used as dry tires — there's no fallback for them.\n\nSo the dual-purpose tire without adequate tread has a fallback (it can race as a dry tire), whereas a dedicated wet tire has no such fallback when the track isn't wet.",
+      "verdict": "grounded",
+      "rationale": "The candidate accurately states that per T2.6.5 a dual-purpose tire lacking required tread loses its wet status but may still be used as a dry tire, and contrasts it correctly with T2.6.6 dedicated wet tires that may only be used in Damp or Wet conditions, matching the expected answer without fabrication.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0108",
+        "fb_rules.pdf:0109",
+        "fb_rules.pdf:0389",
+        "fb_rules.pdf:0388",
+        "fb_rules.pdf:0083"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3256,
+        "output_tokens": 293
+      },
+      "latency_s": 16.803796699998202,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0108",
+        "fb_rules.pdf:0109"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-041",
+      "status": "graded",
+      "answer": "No — the two sets of rules differ.\n\nFor the standard **side impact structure** (T3.15.1), the upper member connecting the main hoop and front hoop must be at a height **between 240 mm and 320 mm** above the lowest inside chassis point between the front and main hoop.\n\nFor **other impact structures** protecting side-projecting components (T3.15.2, covering CV1.3.2, EV4.4.2, EV5.5.2), the rule only specifies an **upper bound**: the upper member \"must not be higher than 320 mm\" above the lowest inside chassis point between the front and main hoop. There is no stated 240 mm lower bound for these other impact structures — only the requirement that they be fully triangulated structures of at least three steel tubes on each side and rearward of the protected component (and that the front of the component be protected if it projects outward from the roll hoops).\n\nSo the 320 mm upper limit carries over, but the 240–320 mm range as a whole does not — the lower limit (240 mm) is specific to the standard side impact structure rule (T3.15.1) and is not repeated in T3.15.2.",
+      "verdict": "grounded",
+      "rationale": "The candidate matches the expected answer exactly on the key distinction -- T3.15.1 requires a 240-320 mm range while T3.15.2 only caps the upper member at 320 mm with no lower bound -- and its extra details about triangulated three-tube structures are consistent with the cited sections.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0138",
+        "fb_rules.pdf:0137",
+        "fb_rules.pdf:0139",
+        "fb_rules.pdf:0127",
+        "fb_rules.pdf:0099"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3141,
+        "output_tokens": 392
+      },
+      "latency_s": 12.327358399998047,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0137",
+        "fb_rules.pdf:0138"
+      ],
+      "fabricated": [],
+      "citation_precision": 0.5,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-042",
+      "status": "graded",
+      "answer": "Yes. Equivalent (higher) test velocities than the standard 7 m/s are allowed, but only to accommodate a lower total testing mass, and only as long as the energy absorbed is still 7350 J or more. If a team cannot meet this energy-absorption requirement (i.e., cannot achieve ≥7350 J absorbed even with the higher velocity), they must use the standard IA instead.",
+      "verdict": "grounded",
+      "rationale": "The candidate matches the expected answer exactly on all points: higher equivalent velocities allowed only to accommodate lower testing mass, the 7350 J threshold, and the fallback to the standard IA if unmet.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0146",
+        "fb_rules.pdf:0150",
+        "fb_rules.pdf:0149",
+        "fb_rules.pdf:0145",
+        "fb_rules.pdf:0147"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3157,
+        "output_tokens": 153
+      },
+      "latency_s": 9.342776299999969,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0146"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-043",
+      "status": "graded",
+      "answer": "According to T3.19.4, the three methods to prove the IA assembly + non-crushable object(s) combination does not exceed the 120 kN peak force limit are:\n\n1. **Physical testing** of the IA assembly including any attached non-crushable object(s), or structurally representative dummies thereof, in front of the AIP. (Physical testing is required if non-crushable objects are located in front view of the AIP.)\n\n2. **Combining the peak force from physical testing** of the IA assembly with the failure load for the mounting of the non-crushable object(s), calculated from fastener shear and/or link buckling.\n\n3. **Combining the \"standard\" IA peak load of 95 kN** with the failure load for the mounting of the non-crushable object(s), calculated from fastener shear and/or link buckling.",
+      "verdict": "grounded",
+      "rationale": "The candidate lists all three permitted proof methods exactly as in the expected answer, with the extra '120 kN' figure being a consistent restatement of the peak force limit rather than a contradiction.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0148",
+        "fb_rules.pdf:0150",
+        "fb_rules.pdf:0149",
+        "fb_rules.pdf:0144",
+        "fb_rules.pdf:0084"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3238,
+        "output_tokens": 291
+      },
+      "latency_s": 12.952415700001438,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0148",
+        "fb_rules.pdf:0149"
+      ],
+      "fabricated": [],
+      "citation_precision": 0.5,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-044",
+      "status": "graded",
+      "answer": "Based on the excerpts:\n\n**Minimum mechanical relays (CV4.1.1):** The shutdown circuit must act through a minimum of **two mechanical relays**:\n- One relay for the **fuel pump**\n- At least one relay for **injection and ignition**\n\n**Loss of power behavior (CV4.1.3):** All circuits that are part of the shutdown circuit must be designed so that in the **de-energized/disconnected state, they open the shutdown circuit**.",
+      "verdict": "grounded",
+      "rationale": "The candidate matches the expected answer exactly on both points - two minimum mechanical relays (one for fuel pump, at least one for injection and ignition) and the de-energized/disconnected state opening the shutdown circuit - with correct section attributions and no fabricated claims.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0250",
+        "fb_rules.pdf:0202",
+        "fb_rules.pdf:0201",
+        "fb_rules.pdf:0233",
+        "fb_rules.pdf:0301"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3276,
+        "output_tokens": 178
+      },
+      "latency_s": 12.96060320000106,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0250"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-045",
+      "status": "graded",
+      "answer": "During an EV endurance driver change:\n\n- **TSMS/TSAL requirement before touching the vehicle:** The TSMS must be switched off by the ESO, and the TSAL must have changed to green color, before anyone is allowed to touch the vehicle or climb out of it (D7.5.6).\n\n- **If the change takes longer than allotted:** Each team is given three minutes to change their driver (D7.5.4). If the driver change takes longer than three minutes, the extra time is included in the final time (D7.5.9).",
+      "verdict": "grounded",
+      "rationale": "The candidate states both required facts — the ESO switching off the TSMS and the TSAL turning green before anyone touches the vehicle, and the three-minute limit with extra time added to the final time — consistent with the expected answer, with only a minor citation attribution difference for the three-minute allotment.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0387",
+        "fb_rules.pdf:0386",
+        "fb_rules.pdf:0087",
+        "fb_rules.pdf:0074",
+        "fb_rules.pdf:0090"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3234,
+        "output_tokens": 203
+      },
+      "latency_s": 10.19294870000158,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0387",
+        "fb_rules.pdf:0386"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-046",
+      "status": "graded",
+      "answer": "According to the rules, gas cylinders/tanks and their pressure regulators must be located **within the rollover protection envelope (T1.1.15)**.\n\nBesides being protected from mechanical damage (rollover, collision from any direction, or damage from rotating equipment failure), the cylinder/tank must also be protected from **heat sources** — specifically, gas cylinders/tanks must be insulated from any heat sources.",
+      "verdict": "grounded",
+      "rationale": "The candidate correctly states the cylinder and its pressure regulator must be within the rollover protection envelope per T1.1.15 and must be insulated from heat sources, with the extra mechanical-damage detail being plausible elaboration that does not contradict the expected answer.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0190",
+        "fb_rules.pdf:0189",
+        "fb_rules.pdf:0188",
+        "fb_rules.pdf:0102",
+        "fb_rules.pdf:0237"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3310,
+        "output_tokens": 170
+      },
+      "latency_s": 11.250116699997307,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0189",
+        "fb_rules.pdf:0190"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-047",
+      "status": "graded",
+      "answer": "Based on the excerpts, you cannot top up your own car's tank yourself: fueling may only take place at the fuel station and must be conducted by officials only (A6.9.1). Also, open fuel containers are not permitted at the competition (A6.9.2).",
+      "verdict": "grounded",
+      "rationale": "The candidate correctly states that fueling must occur at the fuel station and be conducted by officials only, matching the expected answer, and the additional note about open fuel containers cites an adjacent rule (A6.9.2) without contradicting the source.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0246",
+        "fb_rules.pdf:0089",
+        "fb_rules.pdf:0083",
+        "fb_rules.pdf:0085",
+        "fb_rules.pdf:0094"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3073,
+        "output_tokens": 105
+      },
+      "latency_s": 9.392735600002197,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0089"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-048",
+      "status": "graded",
+      "answer": "Based on the excerpt provided, it is a hard zero-tolerance policy with no wiggle room: if a team member is tested with an alcohol level higher than 0.0%, they will be immediately disqualified for the rest of the competition. If a second team member from the same team is also found with an alcohol level higher than 0.0%, the **entire team** will be disqualified immediately.",
+      "verdict": "grounded",
+      "rationale": "The candidate accurately restates the zero-tolerance policy, the individual disqualification above 0.0%, and the whole-team disqualification on a second offender, matching the expected answer without adding unsupported claims.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0094",
+        "fb_rules.pdf:0087",
+        "fb_rules.pdf:0051",
+        "fb_rules.pdf:0364",
+        "fb_rules.pdf:0084"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3030,
+        "output_tokens": 142
+      },
+      "latency_s": 9.746677299997828,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0087"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-049",
+      "status": "graded",
+      "answer": "Based on the excerpts provided, I can't fully answer this. The material discusses a **pushbar** (T13.1) that must be capable of slowing/stopping and pulling the vehicle rearwards, must have university/college name visible on it, and (for EV) must carry HV gloves and a multimeter. However, none of the excerpts explicitly mention a handle, grip, or grab point specifically for people to hold onto when pushing the car — the pushbar itself seems to be the device used for controlling the vehicle's motion while pushing, per A6.7 (which references someone in the cockpit controlling steering/braking while it's pushed).\n\nIf there's a specific rule about hand grips or grab handles elsewhere in the rules document, it isn't included in these excerpts, so I can't confirm one way or the other.",
+      "verdict": "grounded",
+      "rationale": "The candidate accurately describes the pushbar requirement from T13.1 consistent with the expected answer, asserts nothing false, and honestly declines on the narrower question of a dedicated grip rather than fabricating one.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0085",
+        "egear.md:0019",
+        "smg.md:0012",
+        "fb_rules.pdf:0217",
+        "fb_rules.pdf:0088"
+      ],
+      "recall_hit": false,
+      "usage": {
+        "input_tokens": 3031,
+        "output_tokens": 294
+      },
+      "latency_s": 11.987509399998089,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0217",
+        "fb_rules.pdf:0088"
+      ],
+      "fabricated": [],
+      "citation_precision": 0.0,
+      "coverage": 0.0
+    },
+    {
+      "id": "q-050",
+      "status": "graded",
+      "answer": "Yes. According to rule T13.2.4, on both sides of the vehicle, the jack pickup points must be indicated by orange triangles.",
+      "verdict": "grounded",
+      "rationale": "The candidate matches the expected answer exactly, affirming that jack pickup points must be marked with orange triangles on both sides of the vehicle, and its citation of T13.2.4 matches the source location.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0218",
+        "fb_rules.pdf:0091",
+        "fb_rules.pdf:0315",
+        "fb_rules.pdf:0270",
+        "fb_rules.pdf:0217"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3145,
+        "output_tokens": 68
+      },
+      "latency_s": 9.870532700002514,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0218"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-051",
+      "status": "graded",
+      "answer": "No — that would not be allowed. Per T6.1.5, \"'Brake-by-wire' systems are prohibited.\" The rules require the vehicle to have \"a hydraulic brake system that acts on all four wheels and is operated by a single control\" (T6.1.1), with two independent hydraulic circuits (T6.1.2). Even for EVs, which are permitted to use brake pedal travel for electric regeneration, the rules explicitly require that at least the remaining pedal travel \"must directly actuate the hydraulic brake system\" (T6.1.12) — meaning a physical hydraulic system is still mandatory alongside any electric/wire-based regeneration.\n\nSo a purely wire-and-computer brake system with no physical hydraulic backup is explicitly prohibited by these rules.",
+      "verdict": "grounded",
+      "rationale": "The candidate correctly states that brake-by-wire systems are prohibited per T6.1.5, matching the expected answer, and its supporting details about hydraulic requirements are consistent elaborations within the same T6.1 brake section rather than contradictions.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0175",
+        "fb_rules.pdf:0177",
+        "fb_rules.pdf:0176",
+        "fb_rules.pdf:0178",
+        "fb_rules.pdf:0191"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3193,
+        "output_tokens": 290
+      },
+      "latency_s": 13.354259199997614,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0175",
+        "fb_rules.pdf:0177"
+      ],
+      "fabricated": [],
+      "citation_precision": 0.5,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-052",
+      "status": "graded",
+      "answer": "I cannot answer this from the provided material — the excerpts do not contain information about a driver hearing something running or what action to take in that case.",
+      "verdict": "grounded",
+      "rationale": "The candidate asserts nothing false and honestly declines to answer rather than fabricating content the retrieved excerpts did not support.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0331",
+        "fb_rules.pdf:0329",
+        "fb_rules.pdf:0085",
+        "fb_rules.pdf:0370",
+        "fb_rules.pdf:0074"
+      ],
+      "recall_hit": false,
+      "usage": {
+        "input_tokens": 3178,
+        "output_tokens": 51
+      },
+      "latency_s": 10.413888200000656,
+      "error": null,
+      "cited": [],
+      "fabricated": [],
+      "citation_precision": null,
+      "coverage": 0.0
+    },
+    {
+      "id": "q-053",
+      "status": "graded",
+      "answer": "The Mercedes-Benz 722.6 used around 250 shift maps, compared to the ZF unit's roughly five.",
+      "verdict": "grounded",
+      "rationale": "The candidate states the same figures as the expected answer -- roughly 250 shift maps for the Mercedes 722.6 versus about five for the ZF unit -- with no fabricated claims.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "tiptronic.md:0013",
+        "tiptronic.md:0008",
+        "amg_mct.md:0009",
+        "amg_mct.md:0004",
+        "amg_mct.md:0012"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3277,
+        "output_tokens": 61
+      },
+      "latency_s": 10.440475600000354,
+      "error": null,
+      "cited": [
+        "tiptronic.md:0013"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-054",
+      "status": "graded",
+      "answer": "If the pre-selected-gear assumption doesn't hold — for example, when the DCT is asked for an out-of-sequence change like a big multi-gear downshift — the DCT slows right down. By contrast, the MCT shifts an out-of-sequence, multi-gear change just as fast as a single shift, which is why several owners prefer the MCT on the road.",
+      "verdict": "grounded",
+      "rationale": "The candidate matches the expected answer exactly in substance -- DCT slows for out-of-sequence multi-gear downshifts while MCT handles them as fast as single shifts, which owners prefer on the road -- with no fabricated claims.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "smg.md:0008",
+        "smg.md:0013",
+        "amg_mct.md:0006",
+        "egear.md:0006",
+        "smg.md:0007"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3118,
+        "output_tokens": 137
+      },
+      "latency_s": 10.126899999999296,
+      "error": null,
+      "cited": [
+        "amg_mct.md:0006"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 1.0
+    },
+    {
+      "id": "q-055",
+      "status": "graded",
+      "answer": "I cannot answer this from the provided material. The excerpts only mention the \"too slow\" threshold (below 8 m/s average) in the context of dry conditions; none of the retrieved excerpts specify whether this threshold changes or stays the same for wet or damp conditions.",
+      "verdict": "grounded",
+      "rationale": "The candidate asserts nothing false — it correctly states the 8 m/s dry threshold it found and explicitly declines to speculate about the wet/damp case rather than fabricating an answer.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0389",
+        "fb_rules.pdf:0326",
+        "fb_rules.pdf:0319",
+        "fb_rules.pdf:0109",
+        "fb_rules.pdf:0373"
+      ],
+      "recall_hit": false,
+      "usage": {
+        "input_tokens": 3379,
+        "output_tokens": 96
+      },
+      "latency_s": 10.799202700000023,
+      "error": null,
+      "cited": [],
+      "fabricated": [],
+      "citation_precision": null,
+      "coverage": 0.0
+    },
+    {
+      "id": "q-056",
+      "status": "graded",
+      "answer": "I can only answer about the Formula Bharat rulebook's IMD requirement from the provided excerpts — there is no \"egear document\" included in the excerpts, so I cannot address that part of the question.\n\n**Formula Bharat IMD (Insulation Monitoring Device) trigger:** Per EV6.3.6, the IMD opens the shutdown circuit \"in case of an insulation failure or an IMD failure\" — i.e., it shuts down the tractive system when it detects an insulation fault or when the IMD itself fails, without any programmable logic involved. When this happens, a red cockpit indicator lettered \"IMD\" must light up and stay on until manually reset (EV6.3.7).\n\nI cannot answer the \"egear document\" portion since no such document appears in the excerpts provided.",
+      "verdict": "grounded",
+      "rationale": "The candidate accurately states the IMD trigger (insulation failure or IMD failure, no programmable logic) consistent with EV6.3.6, and honestly declines the egear portion rather than fabricating it; the added EV6.3.7 indicator detail is plausible rulebook context and asserts nothing inconsistent with the expected answer.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "fb_rules.pdf:0305",
+        "fb_rules.pdf:0300",
+        "fb_rules.pdf:0200",
+        "fb_rules.pdf:0304",
+        "fb_rules.pdf:0202"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3213,
+        "output_tokens": 276
+      },
+      "latency_s": 11.511346200000844,
+      "error": null,
+      "cited": [
+        "fb_rules.pdf:0304"
+      ],
+      "fabricated": [],
+      "citation_precision": 1.0,
+      "coverage": 0.5
+    },
+    {
+      "id": "q-057",
+      "status": "graded",
+      "answer": "I cannot answer this from the provided material. None of the excerpts mention a gearbox that adapts its shifting to the driver over time (i.e., an adaptive/learning shift logic) in either the SMG or Tiptronic documents.",
+      "verdict": "grounded",
+      "rationale": "The candidate asserts nothing inconsistent with the expected answer and fabricates no claims; it merely declines on the basis that its retrieved excerpts lacked the adaptive-shift passages, which is a retrieval shortfall rather than a grounding violation.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "tiptronic.md:0000",
+        "smg.md:0003",
+        "tiptronic.md:0003",
+        "smg.md:0000",
+        "tiptronic.md:0001"
+      ],
+      "recall_hit": false,
+      "usage": {
+        "input_tokens": 2991,
+        "output_tokens": 85
+      },
+      "latency_s": 9.892891399998916,
+      "error": null,
+      "cited": [],
+      "fabricated": [],
+      "citation_precision": null,
+      "coverage": 0.0
+    },
+    {
+      "id": "q-058",
+      "status": "graded",
+      "answer": "Yes. According to the excerpts, when Porsche moved to bigger, more powerful engines in the 996.2-generation 911, it replaced the ZF Tiptronic with the Mercedes-Benz 722.6 transmission starting in 2002 — a torque-converter automatic built by Mercedes, still branded Tiptronic by Porsche. The tiptronic.md excerpt explicitly notes that this same 722.6 transmission was later \"put to good use by Mercedes-AMG,\" pointing to the AMG MCT blog for details. This is corroborated by the amg_mct.md source list, which cites the Mercedes-Benz 9G-Tronic Wikipedia entry referencing the NAK (Nass-Anfahrkupplung) wet start-up clutch design used in AMG's SpeedShift MCT — the same lineage of Mercedes torque-converter automatics. So the 722.6 unit Porsche adopted post-2002 and the transmission family AMG developed into SpeedShift MCT trace back to the same Mercedes-Benz transmission lineage.",
+      "verdict": "not_grounded",
+      "rationale": "The candidate answers 'Yes' and claims the 722.6 Porsche adopted is the same family AMG turned into SpeedShift MCT, directly contradicting the expected answer that the MCT was based on the different 7-speed 722.9 architecture.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "amg_mct.md:0000",
+        "tiptronic.md:0012",
+        "amg_mct.md:0011",
+        "tiptronic.md:0000",
+        "amg_mct.md:0012"
+      ],
+      "recall_hit": true,
+      "usage": {
+        "input_tokens": 3316,
+        "output_tokens": 388
+      },
+      "latency_s": 11.981692800000019,
+      "error": null,
+      "cited": [
+        "tiptronic.md:0012",
+        "amg_mct.md:0011"
+      ],
+      "fabricated": [],
+      "citation_precision": 0.5,
+      "coverage": 0.5
+    },
+    {
+      "id": "q-059",
+      "status": "graded",
+      "answer": "Based on the excerpts, the shared piece of ownership advice is: **treat a single-clutch automated manual gearbox like the manual transmission it fundamentally is, not like a true automatic** — since both SMG and e-gear are, at their core, just a manual gearbox with the clutch pedal replaced by hydraulic/electric actuation.\n\nThe documented consequence of ignoring this advice, per the egear.md excerpt, is that treating it like an automatic **\"will burn a clutch in a few thousand miles.\"** Conversely, treating it like the manual it actually is allows the same hardware to \"comfortably clear 40,000 to 50,000 miles, often far more.\"\n\nThe SMG excerpts reinforce the underlying reasoning — that the SMG is \"nothing more exotic than a manual transmission with the clutch pedal removed and replaced by hydraulic actuation\" — which is why the same driving-habit logic applies to it as well, even though the specific mileage/failure consequence is stated explicitly only in the e-gear document.",
+      "verdict": "grounded",
+      "rationale": "The candidate correctly identifies the shared advice to drive the single-clutch gearbox like a manual rather than an automatic and accurately reports the e-gear clutch-burn-in-a-few-thousand-miles consequence, while honestly flagging that the SMG excerpt it saw states the reasoning but not the specific failure figure, asserting nothing inconsistent with the expected answer.",
+      "stop_reason": "end_turn",
+      "retrieved": [
+        "egear.md:0024",
+        "smg.md:0010",
+        "smg.md:0003",
+        "smg.md:0000",
+        "smg.md:0014"
+      ],
+      "recall_hit": false,
+      "usage": {
+        "input_tokens": 3122,
+        "output_tokens": 359
+      },
+      "latency_s": 10.986595799997303,
+      "error": null,
+      "cited": [
+        "egear.md:0024",
+        "smg.md:0003"
+      ],
+      "fabricated": [],
+      "citation_precision": 0.0,
+      "coverage": 0.0
+    }
+  ]
+}

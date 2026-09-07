@@ -3,6 +3,15 @@
 A document is re-chunked and re-embedded only when its source hash or
 parser identity no longer matches what the index recorded; every other
 document's chunks and vectors are carried over untouched.
+
+Chunking strategy is fixed for the life of an index directory (specs/4-
+retrieval-optimization Milestone 6): a `structure` index and a `fixed`
+index are different artifacts and must live in different directories
+(`experiments.index_subdir_name`) -- `ChunkingMismatchError` refuses to let
+one silently overwrite or partially reuse the other's chunks, which the
+incremental-rebuild logic above would otherwise do (it only checks a
+document's own hash/parser, not whether the index it's writing into was
+built with a different chunking config entirely).
 """
 
 from __future__ import annotations
@@ -15,7 +24,7 @@ import numpy as np
 from ..collections import collections_for_doc
 from ..corpus import Document
 from ..parsers.registry import ParserError, extract_document
-from .chunker import CHUNK_OVERLAP, CHUNK_SIZE, chunk_text
+from .chunker import CHUNK_OVERLAP, CHUNK_SIZE, Chunk, chunk_text, chunk_text_structure
 from .embedder import Embedder
 from .store import (
     ChunkerSettings,
@@ -24,6 +33,19 @@ from .store import (
     StoredChunk,
     VectorStore,
 )
+
+DEFAULT_CHUNKING = ChunkerSettings(strategy="fixed", size=CHUNK_SIZE, overlap=CHUNK_OVERLAP)
+
+
+class ChunkingMismatchError(RuntimeError):
+    def __init__(self, index_chunking: ChunkerSettings, requested_chunking: ChunkerSettings):
+        self.index_chunking = index_chunking
+        self.requested_chunking = requested_chunking
+        super().__init__(
+            f"index was built with chunking {index_chunking}, but this build requested "
+            f"{requested_chunking} -- different chunking strategies need different index "
+            "directories, not a shared one"
+        )
 
 
 @dataclass(frozen=True)
@@ -39,10 +61,17 @@ def _normalize(vectors: np.ndarray) -> np.ndarray:
     return vectors / norms
 
 
+def _chunk(doc_name: str, text: str, chunking: ChunkerSettings) -> list[Chunk]:
+    if chunking.strategy == "structure":
+        return chunk_text_structure(doc_name, text, max_chars=chunking.size, overlap=chunking.overlap)
+    return chunk_text(doc_name, text, size=chunking.size, overlap=chunking.overlap)
+
+
 class IndexBuilder:
-    def __init__(self, store: VectorStore, embedder: Embedder | None = None):
+    def __init__(self, store: VectorStore, embedder: Embedder | None = None, *, chunking: ChunkerSettings | None = None):
         self.store = store
         self.embedder = embedder or Embedder()
+        self.chunking = chunking or DEFAULT_CHUNKING
 
     def build(
         self, documents: dict[str, Document], collections: dict[str, list[str]] | None = None
@@ -50,6 +79,8 @@ class IndexBuilder:
         collections = collections or {}
         has_existing = self.store.exists()
         existing_manifest = self.store.load_manifest() if has_existing else None
+        if existing_manifest is not None and existing_manifest.chunker != self.chunking:
+            raise ChunkingMismatchError(existing_manifest.chunker, self.chunking)
         existing_chunks = self.store.load_chunks() if has_existing else []
         existing_vectors = self.store.load_vectors() if has_existing else np.zeros((0, self.embedder.dimension), dtype=np.float32)
 
@@ -90,7 +121,7 @@ class IndexBuilder:
                 results.append(DocIndexResult(doc=name, chunk_count=prior_entry.chunk_count))
                 continue
 
-            chunks = chunk_text(name, extracted.text, size=CHUNK_SIZE, overlap=CHUNK_OVERLAP)
+            chunks = _chunk(name, extracted.text, self.chunking)
             vectors = _normalize(self.embedder.embed([c.text for c in chunks])) if chunks else np.zeros((0, self.embedder.dimension), dtype=np.float32)
 
             for chunk, vector in zip(chunks, vectors):
@@ -118,7 +149,7 @@ class IndexBuilder:
         manifest = IndexManifest(
             embedding_model=self.embedder.model_id,
             dimension=self.embedder.dimension,
-            chunker=ChunkerSettings(strategy="fixed", size=CHUNK_SIZE, overlap=CHUNK_OVERLAP),
+            chunker=self.chunking,
             documents=new_doc_entries,
         )
         vectors_matrix = (

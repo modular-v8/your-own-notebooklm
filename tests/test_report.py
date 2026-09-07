@@ -18,6 +18,7 @@ from raglab.evals.report import (
     find_matching_prior_report,
     make_run_id,
 )
+from raglab.experiments import ChunkingConfig, ExperimentConfig, RetrievalConfig
 
 BASE_CONFIG = RunConfig(
     pipeline="whole_doc",
@@ -103,6 +104,30 @@ def test_find_matching_prior_report_requires_matching_gold_set(tmp_path):
 
     different_gold_set = GoldSetRef(path="evals/gold/y.yaml", version=1, entry_count=1, entry_ids_fingerprint="zzz")
     assert find_matching_prior_report(tmp_path, BASE_CONFIG, different_gold_set) is None
+
+
+def test_run_config_without_experiment_defaults_to_none():
+    """Backward compat: a pre-Phase-4 report has no `experiment` field at
+    all, the same way old reports lacked `collection`."""
+    assert BASE_CONFIG.experiment is None
+
+
+def test_run_config_experiment_round_trips_through_json():
+    experiment = ExperimentConfig(
+        name="baseline",
+        chunking=ChunkingConfig(strategy="fixed", size=900, overlap=150),
+        retrieval=RetrievalConfig(mode="dense", k=5),
+    )
+    report = _report("2026-01-01T00-00-00Z-a", graded=1, grounded_rate=1.0)
+    report = report.model_copy(update={"config": BASE_CONFIG.model_copy(update={"experiment": experiment})})
+
+    restored = Report.model_validate_json(report.model_dump_json())
+
+    assert restored.config.experiment.name == "baseline"
+    assert restored.config.experiment.chunking.size == 900
+    assert restored.config.experiment.chunking.overlap == 150
+    assert restored.config.experiment.retrieval.mode == "dense"
+    assert restored.config.experiment.retrieval.k == 5
 
 
 def test_compute_delta_is_new_minus_old():

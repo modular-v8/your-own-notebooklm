@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from .collections import UnknownCollectionError, require_collection, unreachable_documents
 from .config import RagLabConfig
 from .corpus import load_corpus
+from .evals.compare import CompareError, compare_reports
 from .evals.goldset import (
     CollectionMembershipError,
     CorpusMismatchError,
@@ -39,14 +40,19 @@ from .evals.report import (
 )
 from .evals.runner import EvalRunner
 from .evals.validate import check_not_in_document_lexical_matches
-from .index.builder import IndexBuilder
-from .index.store import EmbeddingMismatchError, NumpyStore
+from .experiments import DEFAULT_EXPERIMENTS_PATH, ExperimentsError, index_subdir_name, load_experiments
+from .index.builder import ChunkingMismatchError, IndexBuilder
+from .index.store import ChunkerSettings, EmbeddingMismatchError, NumpyStore
 from .parsers.registry import ExtractedDocument, ParserError, extract_document
+from .pipelines.agentic import DEFAULT_MAX_CALLS, AgenticPipeline
 from .pipelines.retrieval import RetrievalPipeline
 from .pipelines.whole_doc import WholeDocPipeline
 from .providers.base import Message, ProviderAuthError
 from .providers.registry import PROVIDER_PRECEDENCE, build_provider
+from .retrieval.fusion import DEFAULT_RRF_K
+from .retrieval.reranker import DEFAULT_RERANKER_MODEL, Reranker
 from .retrieval.retriever import Retriever
+from .retrieval.rewriter import QueryRewriter
 
 load_dotenv()  # loads .env into the environment before any provider reads a key
 
@@ -61,11 +67,16 @@ app.add_typer(eval_app, name="eval")
 DEFAULT_CORPUS_DIR = Path("evals/corpus")
 DEFAULT_RUNS_DIR = Path("evals/runs")
 DEFAULT_INDEX_DIR = Path("evals/index")
+# `index_subdir_name` for the baseline (fixed/900/150) chunking config --
+# hardcoded rather than computed so `search`/`collections` (neither
+# --experiment-aware) don't need an ExperimentConfig just to find the one
+# index they've ever used. `index`/`eval run` derive this dynamically instead.
+DEFAULT_FIXED_INDEX_DIR = DEFAULT_INDEX_DIR / "fixed-900-150"
 DEFAULT_CONFIG_PATH = Path("config.toml")
 PROBE_MODEL_ALIAS = "claude-sonnet-5"
 SEARCH_PREVIEW_CHARS = 240
 
-KNOWN_PIPELINES = ("whole_doc", "retrieval")
+KNOWN_PIPELINES = ("whole_doc", "retrieval", "agentic")
 
 
 @providers_app.command("check")
@@ -248,8 +259,14 @@ def gold_locate(
 @app.command("index")
 def index_build(
     corpus_dir: Path = typer.Option(DEFAULT_CORPUS_DIR, "--corpus-dir"),
-    index_dir: Path = typer.Option(DEFAULT_INDEX_DIR, "--index-dir"),
+    index_dir: Path | None = typer.Option(
+        None, "--index-dir", help="Defaults to evals/index/<strategy>, derived from --experiment"
+    ),
+    experiment_name: str = typer.Option(
+        "baseline", "--experiment", help="Named ExperimentConfig from experiments.toml (selects chunking strategy)"
+    ),
     config_path: Path = typer.Option(DEFAULT_CONFIG_PATH, "--config"),
+    experiments_path: Path = typer.Option(DEFAULT_EXPERIMENTS_PATH, "--experiments"),
 ) -> None:
     """Parse, chunk, and embed every corpus document into a persistent index.
 
@@ -257,17 +274,37 @@ def index_build(
     and re-embedded; the rest carry over untouched (a collection reassignment
     alone never triggers a re-embed). Makes no model call (fastembed downloads
     its ONNX model once on first use, then runs locally).
+
+    Each chunking strategy gets its own index directory (evals/index/<strategy>/
+    by default) -- building into a directory whose existing index used a
+    different chunking config is refused rather than silently mixed.
     """
     documents = load_corpus(corpus_dir)
     if not documents:
         typer.echo(f"No documents found in {corpus_dir}", err=True)
         raise typer.Exit(code=1)
 
+    try:
+        experiments = load_experiments(experiments_path)
+    except ExperimentsError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from None
+    if experiment_name not in experiments:
+        typer.echo(f"Unknown experiment {experiment_name!r}; known: {sorted(experiments)}", err=True)
+        raise typer.Exit(code=1)
+    chunking = experiments[experiment_name].chunking
+    effective_index_dir = index_dir if index_dir is not None else DEFAULT_INDEX_DIR / index_subdir_name(chunking)
+
     config = RagLabConfig.load(config_path)
 
-    typer.echo(f"Indexing {len(documents)} document(s) from {corpus_dir}...")
-    builder = IndexBuilder(NumpyStore(index_dir))
-    results = builder.build(documents, collections=config.collections)
+    typer.echo(f"Indexing {len(documents)} document(s) from {corpus_dir} ({chunking.strategy} chunking)...")
+    chunker_settings = ChunkerSettings(strategy=chunking.strategy, size=chunking.size, overlap=chunking.overlap)
+    builder = IndexBuilder(NumpyStore(effective_index_dir), chunking=chunker_settings)
+    try:
+        results = builder.build(documents, collections=config.collections)
+    except ChunkingMismatchError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from None
 
     failed = 0
     for result in results:
@@ -277,7 +314,7 @@ def index_build(
         else:
             typer.echo(f"  {result.doc}: {result.chunk_count} chunks")
 
-    typer.echo(f"Wrote index to {index_dir}")
+    typer.echo(f"Wrote index to {effective_index_dir}")
 
     for doc_name in unreachable_documents(list(documents), config.collections):
         typer.echo(f"Warning: {doc_name} belongs to no collection; unreachable by any scoped query.")
@@ -289,7 +326,7 @@ def index_build(
 
 @app.command("collections")
 def collections_list(
-    index_dir: Path = typer.Option(DEFAULT_INDEX_DIR, "--index-dir"),
+    index_dir: Path = typer.Option(DEFAULT_FIXED_INDEX_DIR, "--index-dir"),
     config_path: Path = typer.Option(DEFAULT_CONFIG_PATH, "--config"),
 ) -> None:
     """List each configured collection with its documents and chunk counts."""
@@ -318,7 +355,7 @@ def search(
     query: str = typer.Argument(..., help="Search query"),
     k: int = typer.Option(5, "--k"),
     collection: str | None = typer.Option(None, "--collection", help="Restrict search to this collection"),
-    index_dir: Path = typer.Option(DEFAULT_INDEX_DIR, "--index-dir"),
+    index_dir: Path = typer.Option(DEFAULT_FIXED_INDEX_DIR, "--index-dir"),
     corpus_dir: Path = typer.Option(DEFAULT_CORPUS_DIR, "--corpus-dir"),
     config_path: Path = typer.Option(DEFAULT_CONFIG_PATH, "--config"),
 ) -> None:
@@ -391,15 +428,32 @@ def eval_run(
     collection: str | None = typer.Option(
         None, "--collection", help="Override the gold set's own collection for this run"
     ),
+    experiment_name: str = typer.Option(
+        "baseline", "--experiment", help="Named ExperimentConfig from experiments.toml"
+    ),
     corpus_dir: Path = typer.Option(DEFAULT_CORPUS_DIR, "--corpus-dir"),
     runs_dir: Path = typer.Option(DEFAULT_RUNS_DIR, "--runs-dir"),
-    index_dir: Path = typer.Option(DEFAULT_INDEX_DIR, "--index-dir"),
+    index_dir: Path | None = typer.Option(
+        None, "--index-dir", help="Defaults to evals/index/<strategy>, derived from --experiment"
+    ),
     config_path: Path = typer.Option(DEFAULT_CONFIG_PATH, "--config"),
+    experiments_path: Path = typer.Option(DEFAULT_EXPERIMENTS_PATH, "--experiments"),
 ) -> None:
     """Run every gold-set entry through a pipeline and provider; emit one report."""
     if pipeline_name not in KNOWN_PIPELINES:
         typer.echo(f"Unknown pipeline {pipeline_name!r}; known: {list(KNOWN_PIPELINES)}", err=True)
         raise typer.Exit(code=1)
+
+    try:
+        experiments = load_experiments(experiments_path)
+    except ExperimentsError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from None
+    if experiment_name not in experiments:
+        typer.echo(f"Unknown experiment {experiment_name!r}; known: {sorted(experiments)}", err=True)
+        raise typer.Exit(code=1)
+    experiment = experiments[experiment_name]
+    effective_index_dir = index_dir if index_dir is not None else DEFAULT_INDEX_DIR / index_subdir_name(experiment.chunking)
 
     gold, documents = _load_verified_gold_set(gold_path, corpus_dir)
     config = RagLabConfig.load(config_path)
@@ -425,13 +479,22 @@ def eval_run(
         raise typer.Exit(code=1) from None
 
     chunk_spans: dict[str, CharSpan] = {}
-    if pipeline_name == "retrieval":
-        store = NumpyStore(index_dir)
+    if pipeline_name in ("retrieval", "agentic"):
+        store = NumpyStore(effective_index_dir)
         if not store.exists():
-            typer.echo(f"No index at {index_dir}. Run `raglab index` first.", err=True)
+            typer.echo(f"No index at {effective_index_dir}. Run `raglab index` first.", err=True)
             raise typer.Exit(code=1)
 
         manifest = store.load_manifest()
+        if manifest.chunker.strategy != experiment.chunking.strategy:
+            typer.echo(
+                f"Index at {effective_index_dir} was built with {manifest.chunker.strategy!r} chunking, "
+                f"but experiment {experiment.name!r} requests {experiment.chunking.strategy!r}. "
+                "Run `raglab index --experiment ...` for this experiment first.",
+                err=True,
+            )
+            raise typer.Exit(code=1)
+
         referenced_docs = {doc for entry in gold.entries for doc in entry.docs}
         missing = sorted(referenced_docs - set(manifest.documents))
         if missing:
@@ -448,12 +511,46 @@ def eval_run(
             typer.echo(f"Index stale for: {', '.join(stale)}. Re-run `raglab index`.", err=True)
             raise typer.Exit(code=1)
 
-        pipeline = RetrievalPipeline(
-            answer_provider,
-            Retriever(store),
-            top_k=config.retrieval.top_k,
-            score_threshold=config.retrieval.score_threshold,
-        )
+        if pipeline_name == "agentic":
+            max_calls = experiment.agentic.max_calls if experiment.agentic is not None else DEFAULT_MAX_CALLS
+            pipeline = AgenticPipeline(
+                answer_provider, Retriever(store), top_k=experiment.retrieval.k, max_calls=max_calls
+            )
+        else:
+            reranker = None
+            if experiment.reranking is not None and experiment.reranking.mode != "off":
+                if experiment.reranking.mode == "llm":
+                    typer.echo(
+                        "Experiment {!r} requests an LLM reranker, which is not built (T2.6's ONNX "
+                        "cross-encoder is unblocked and used instead for every reranking experiment "
+                        "so far).".format(experiment.name),
+                        err=True,
+                    )
+                    raise typer.Exit(code=1)
+                reranker = Reranker(model_name=experiment.reranking.model or DEFAULT_RERANKER_MODEL)
+
+            rewriter = None
+            if experiment.rewriting is not None and experiment.rewriting.mode != "off":
+                if experiment.rewriting.mode != "follow_ups_only":
+                    typer.echo(
+                        f"Experiment {experiment.name!r} requests rewriting mode "
+                        f"{experiment.rewriting.mode!r}, which isn't built yet (only 'follow_ups_only' is).",
+                        err=True,
+                    )
+                    raise typer.Exit(code=1)
+                rewriter = QueryRewriter(answer_provider)
+
+            pipeline = RetrievalPipeline(
+                answer_provider,
+                Retriever(store),
+                top_k=experiment.retrieval.k,
+                score_threshold=config.retrieval.score_threshold,
+                mode=experiment.retrieval.mode,
+                candidate_k=experiment.retrieval.candidate_k,
+                rrf_k=experiment.retrieval.rrf_k or DEFAULT_RRF_K,
+                reranker=reranker,
+                rewriter=rewriter,
+            )
         chunk_spans = {chunk.chunk_id: (chunk.char_start, chunk.char_end) for chunk in store.load_chunks()}
     else:
         pipeline = WholeDocPipeline(answer_provider, {doc_name: ed.text for doc_name, ed in extracted.items()})
@@ -476,6 +573,7 @@ def eval_run(
         answer=RoleReportConfig(provider=answer_provider.name, model=answer_provider.model),
         judge=RoleReportConfig(provider=judge_provider.name, model=judge_provider.model),
         concurrency=config.concurrency,
+        experiment=experiment,
     )
     gold_set_ref = GoldSetRef(
         path=str(gold_path),
@@ -577,6 +675,60 @@ def eval_run(
         _print_delta(previous_report, report)
     else:
         typer.echo("No comparable prior run found (matching config + gold set).")
+
+
+@app.command("compare")
+def compare_cmd(
+    baseline_path: Path = typer.Argument(..., help="Baseline report JSON"),
+    experiment_path: Path = typer.Argument(..., help="Experiment report JSON"),
+) -> None:
+    """Paired per-entry comparison of an experiment report against a baseline report."""
+    try:
+        baseline = Report.model_validate_json(baseline_path.read_text(encoding="utf-8"))
+        experiment = Report.model_validate_json(experiment_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        typer.echo(f"Failed to load report: {exc}", err=True)
+        raise typer.Exit(code=1) from None
+
+    # Per-tag breakdown needs each entry's tags, which reports don't carry --
+    # re-derived from the gold set both reports are guaranteed (post-guard)
+    # to share. Best-effort: an unreadable gold set degrades to no tag
+    # breakdown rather than blocking the comparison itself.
+    tags_by_id: dict[str, list[str]] = {}
+    try:
+        gold = load_gold_set(Path(baseline.gold_set.path))
+        tags_by_id = {entry.id: entry.tags for entry in gold.entries}
+    except (OSError, GoldSetError):
+        pass
+
+    try:
+        result = compare_reports(baseline, experiment, tags_by_id)
+    except CompareError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from None
+
+    total = result.wins + result.losses + result.ties
+    typer.echo(f"{experiment.run_id} vs. {baseline.run_id}")
+    typer.echo(
+        f"wins={result.wins} losses={result.losses} ties={result.ties} excluded={len(result.excluded)}"
+    )
+    if total:
+        typer.echo(
+            f"win_rate={result.wins / total:.2%} loss_rate={result.losses / total:.2%} "
+            f"tie_rate={result.ties / total:.2%}"
+        )
+    if result.chunking_note:
+        typer.echo(result.chunking_note)
+
+    if result.regressed:
+        typer.echo("Regressed entries:")
+        for entry in result.regressed:
+            typer.echo(f"  {entry.id}: {', '.join(entry.regressed_metrics)}")
+
+    if result.by_tag:
+        typer.echo("By tag:")
+        for tag, counts in result.by_tag.items():
+            typer.echo(f"  {tag} (n={counts.count}): wins={counts.wins} losses={counts.losses} ties={counts.ties}")
 
 
 if __name__ == "__main__":

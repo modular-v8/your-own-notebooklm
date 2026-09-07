@@ -36,6 +36,14 @@ CANDIDATE ANSWER:
 Judge whether the candidate answer is factually consistent with the expected
 answer and not fabricated beyond what the source location supports.
 
+If the candidate correctly and accurately answers the part of the question
+its context supports, and explicitly declines rather than fabricates the
+part it doesn't, that is "grounded" — an honest partial answer that asserts
+nothing false. Reserve "not_grounded" for a candidate that asserts something
+inconsistent with the expected answer, or fabricates a claim the source
+location doesn't support. Do not mark an answer "not_grounded" merely for
+declining to state a fact it correctly identifies as unsupported.
+
 Respond with ONLY a JSON object, no other text. Do not use double-quote
 characters inside the rationale text (use single quotes instead) — it must
 stay valid JSON:

@@ -1,0 +1,85 @@
+# Named ExperimentConfig entries (specs/4-retrieval-optimization/plan.md,
+# Data Model). `baseline` reproduces today's fixed defaults exactly --
+# index/chunker.py's 900/150 and config.toml's [retrieval].top_k -- so the
+# Phase 4 baseline run is byte-for-byte the same pipeline Phases 0-3 used.
+# Later milestones add named variants (hybrid-v1, rewrite-v1, ...) here.
+
+[baseline.chunking]
+strategy = "fixed"
+size = 900
+overlap = 150
+
+[baseline.retrieval]
+mode = "dense"
+k = 5
+
+[hybrid-v1.chunking]
+strategy = "fixed"
+size = 900
+overlap = 150
+
+[hybrid-v1.retrieval]
+mode = "hybrid"
+k = 5
+candidate_k = 20
+rrf_k = 60
+
+# mode stays "dense" here on purpose (plan.md's prior decisions: techniques
+# tested alone first) -- this isolates reranking's own effect from hybrid's.
+[rerank-v1.chunking]
+strategy = "fixed"
+size = 900
+overlap = 150
+
+[rerank-v1.retrieval]
+mode = "dense"
+k = 5
+candidate_k = 20
+
+[rerank-v1.reranking]
+mode = "onnx"
+model = "Xenova/ms-marco-MiniLM-L-6-v2"
+
+# v1 fires only on follow-up entries (empty history is always a no-op in
+# QueryRewriter.rewrite, so a standalone entry is provably untouched) --
+# it structurally cannot harm the 47 standalone entries.
+[rewrite-v1.chunking]
+strategy = "fixed"
+size = 900
+overlap = 150
+
+[rewrite-v1.retrieval]
+mode = "dense"
+k = 5
+
+[rewrite-v1.rewriting]
+mode = "follow_ups_only"
+
+# mode stays "dense" -- isolates structure-aware chunking's own effect.
+# size=2000 is chunker.py's MAX_STRUCTURE_CHUNK_CHARS, the sub-split
+# ceiling for any rule/heading segment that would otherwise exceed
+# bge-small's 512-token limit; overlap=150 matches the fixed strategy's.
+[chunk-structure-v1.chunking]
+strategy = "structure"
+size = 2000
+overlap = 150
+
+[chunk-structure-v1.retrieval]
+mode = "dense"
+k = 5
+
+# retrieval.mode is unused by the agentic pipeline (each search tool call
+# does a plain dense lookup); k=5 is how many chunks one search call
+# returns, not a ceiling on how many times the model may call it -- that's
+# agentic.max_calls, the actual cost-control knob (plan.md Tech Stack).
+[agentic-v1.chunking]
+strategy = "fixed"
+size = 900
+overlap = 150
+
+[agentic-v1.retrieval]
+mode = "dense"
+k = 5
+
+[agentic-v1.agentic]
+max_calls = 5

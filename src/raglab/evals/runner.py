@@ -140,15 +140,47 @@ async def _run_entry(
                 fabricated=citation_result.fabricated,
                 citation_precision=citation_result.citation_precision,
                 coverage=coverage,
+                rewritten_query=result.rewritten_query,
+                retrieval_calls=result.retrieval_calls,
+                capped=result.capped,
             ),
             reciprocal_rank,
         )
 
-    if _expects_refusal(entry, collection, collections):
-        judge_result = await judge.score_refusal(entry.question, result.answer)
-    else:
-        judge_result = await judge.score_groundedness(
-            entry.question, entry.expected_answer, entry.sources, result.answer
+    try:
+        if _expects_refusal(entry, collection, collections):
+            judge_result = await judge.score_refusal(entry.question, result.answer)
+        else:
+            judge_result = await judge.score_groundedness(
+                entry.question, entry.expected_answer, entry.sources, result.answer
+            )
+    except Exception as exc:
+        # A judge/provider/transport failure here must not raise: an
+        # unwrapped exception propagates out of asyncio.gather and kills the
+        # *entire* run before any report is written -- every already-graded
+        # entry, and every token spent producing them, is lost, not just
+        # this one. Preserve everything already computed (retrieval,
+        # citations, coverage) since none of that depended on the judge.
+        return (
+            EntryReport(
+                id=entry.id,
+                status="errored",
+                error=str(exc),
+                answer=result.answer,
+                stop_reason=result.stop_reason,
+                retrieved=result.retrieved,
+                recall_hit=recall_hit,
+                usage=usage,
+                latency_s=result.latency_s,
+                cited=citation_result.cited,
+                fabricated=citation_result.fabricated,
+                citation_precision=citation_result.citation_precision,
+                coverage=coverage,
+                rewritten_query=result.rewritten_query,
+                retrieval_calls=result.retrieval_calls,
+                capped=result.capped,
+            ),
+            reciprocal_rank,
         )
 
     return (
@@ -167,6 +199,9 @@ async def _run_entry(
             fabricated=citation_result.fabricated,
             citation_precision=citation_result.citation_precision,
             coverage=coverage,
+            rewritten_query=result.rewritten_query,
+            retrieval_calls=result.retrieval_calls,
+            capped=result.capped,
         ),
         reciprocal_rank,
     )

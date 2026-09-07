@@ -15,6 +15,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from ..experiments import ExperimentConfig
+
 EntryStatus = Literal["graded", "skipped", "ungraded", "errored"]
 
 RUN_ID_TIMESTAMP_FORMAT = "%Y-%m-%dT%H-%M-%SZ"
@@ -34,6 +36,10 @@ class RunConfig(BaseModel):
     answer: RoleReportConfig
     judge: RoleReportConfig
     concurrency: int
+    # Default keeps pre-Phase-4 reports loadable (spec: a report without a
+    # recorded experiment config can't be used as a paired comparison
+    # source -- None is exactly that "missing" state, not a stand-in baseline).
+    experiment: ExperimentConfig | None = None
 
 
 class GoldSetRef(BaseModel):
@@ -112,6 +118,9 @@ class EntryReport(BaseModel):
     fabricated: list[str] | None = None
     citation_precision: float | None = None
     coverage: float | None = None
+    rewritten_query: str | None = None
+    retrieval_calls: int | None = None
+    capped: bool = False
 
 
 class Report(BaseModel):
@@ -142,11 +151,17 @@ class ReportWriter:
         return path
 
 
+def gold_sets_match(a: GoldSetRef, b: GoldSetRef) -> bool:
+    """Path and a fingerprint of entry ids -- the identity check a Phase 0
+    defect made necessary (a 29-entry rulebook run printed a delta against a
+    10-entry transmission run because matching stopped at provider config).
+    The single implementation `configs_match` and `evals/compare.py` both
+    call, rather than each re-deriving what "the same gold set" means."""
+    return a.path == b.path and a.entry_ids_fingerprint == b.entry_ids_fingerprint
+
+
 def configs_match(a: RunConfig, b: RunConfig, gold_a: GoldSetRef, gold_b: GoldSetRef) -> bool:
-    """Provider/pipeline config alone isn't enough: matching on that alone
-    let a 29-entry rulebook run print a delta against a 10-entry
-    transmission run (a Phase 0 defect). Gold-set identity -- path and a
-    fingerprint of its entry ids -- must match too."""
+    """Provider/pipeline config alone isn't enough -- see `gold_sets_match`."""
     return (
         a.pipeline == b.pipeline
         and a.collection == b.collection
@@ -155,8 +170,7 @@ def configs_match(a: RunConfig, b: RunConfig, gold_a: GoldSetRef, gold_b: GoldSe
         and a.judge.provider == b.judge.provider
         and a.judge.model == b.judge.model
         and a.concurrency == b.concurrency
-        and gold_a.path == gold_b.path
-        and gold_a.entry_ids_fingerprint == gold_b.entry_ids_fingerprint
+        and gold_sets_match(gold_a, gold_b)
     )
 
 

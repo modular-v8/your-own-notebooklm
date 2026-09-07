@@ -128,6 +128,57 @@ async def test_provider_failure_is_errored_not_raised():
     assert "provider exploded" in entry.error
 
 
+NORMAL_ENTRY_2 = GoldEntry(
+    id="q-005",
+    turns=[Turn(question="What is X, again?")],
+    expected_answer="Y",
+    sources=[Source(doc="doc.md", answer_location=AnswerLocation(type="line_range", start=1, end=2))],
+    tags=[],
+)
+
+
+@pytest.mark.asyncio
+async def test_judge_failure_is_errored_not_raised_and_does_not_kill_other_entries():
+    """A judge/transport failure on one entry must not propagate out of
+    asyncio.gather -- that would crash the whole run before any report is
+    written, losing every already-completed entry (and every token spent
+    producing them), not just the one that failed."""
+
+    class BoomOnSecondCall(FakeProvider):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self._calls = 0
+
+        async def complete(self, *args, **kwargs):
+            self._calls += 1
+            if self._calls == 2:
+                raise RuntimeError("judge transport exploded")
+            return await super().complete(*args, **kwargs)
+
+    answer_provider = FakeProvider(
+        [text_completion("X is Y."), text_completion("X is Y, again.")], context_window=100_000
+    )
+    judge_provider = BoomOnSecondCall(
+        [text_completion('{"verdict": "grounded", "rationale": "ok"}')], context_window=100_000
+    )
+    runner = EvalRunner(
+        WholeDocPipeline(answer_provider, DOCUMENTS),
+        Judge(judge_provider),
+        _gold(NORMAL_ENTRY, NORMAL_ENTRY_2),
+        concurrency=1,  # deterministic ordering, so "second call" means the second entry's judge call
+    )
+
+    result = await runner.run()
+
+    by_id = {e.id: e for e in result.entries}
+    assert by_id["q-001"].status == "graded"
+    assert by_id["q-001"].verdict == "grounded"
+    assert by_id["q-005"].status == "errored"
+    assert "judge transport exploded" in by_id["q-005"].error
+    # The answer itself (already produced before the judge failed) is preserved.
+    assert by_id["q-005"].answer == "X is Y, again."
+
+
 @pytest.mark.asyncio
 async def test_safety_refusal_is_ungraded_and_skips_judge():
     answer_provider = FakeProvider([text_completion("I won't help with that.", stop_reason="refusal")])

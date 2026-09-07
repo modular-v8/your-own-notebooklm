@@ -421,3 +421,304 @@ entries:
     # paired with q-021 (IA dimensional minimums, already verified). "That
     # test" has no referent without the prior turn establishing the IA test
     # context.
+
+  # --- new: Phase 4 gold-set growth (~20 entries), distributed across the
+  # thin tags per the phase plan: follow-up, vocabulary-mismatch,
+  # near-duplicate, boundary-spanning, cross-document. Every entry below was
+  # checked against the extracted rulebook text (or the .md source's exact
+  # line numbers) before being added; occurrence: last is applied wherever a
+  # rule ID also appears in the CHANGELOG section, matching the convention
+  # already used above (verified by counting literal occurrences of each
+  # rule ID in the document, the same check q-011/q-012/q-014/q-027/q-028
+  # rely on).
+
+  # --- near-duplicate (4 new; 4 -> 8) ---
+
+  - id: q-038
+    turns:
+      - question: "Is the Low Voltage Master Switch (LVMS) marked with the same warning symbol as the shutdown buttons, or does the Tractive System Master Switch (TSMS) use that symbol instead?"
+    expected_answer: "The LVMS and the shutdown buttons share the identical symbol — a red spark on a white-edged blue triangle, required by T11.3.3 and T11.4.5 respectively. The TSMS is marked with a different symbol entirely: the ISO 7010-W012 warning triangle, showing a black lightning bolt on a yellow background, per EV6.2.4."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T11.3.3"] }
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T11.4.5"] }
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["EV6.2.4"] }
+    tags: [near-duplicate]
+    # three similarly-purposed markings (LVMS, shutdown buttons, TSMS) where
+    # two are identical and one is not -- the kind of near-miss a coarse
+    # retriever could easily merge or a reranker could mis-rank. None of the
+    # three rule IDs collide with the changelog, so no occurrence is needed.
+
+  - id: q-039
+    turns:
+      - question: "Does the 13 kN load requirement for shoulder and lap belt attachment points also apply to lap and anti-submarine belt attachments when they're mounted close together?"
+    expected_answer: "No. T4.5.3 requires shoulder and lap belt attachment points to support 13 kN, and anti-submarine belt attachment points to support 6.5 kN, individually. T4.5.4 sets a separate, combined figure for a different situation: if the lap belts and anti-submarine belts are attached less than 100 mm apart, those attachment points together must support a total load of 19.5 kN -- not 13 kN."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T4.5.3"] }
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T4.5.4"] }
+    tags: [near-duplicate]
+    # T4.5.4 is also the follow-up answer source for q-031; here it's paired
+    # against T4.5.3 instead, testing whether the individual per-point loads
+    # get confused with the separate combined-load figure.
+
+  - id: q-040
+    turns:
+      - question: "If a team's tires are designed for both dry and wet use but don't have the required tread, can they still be raced at all -- the same way a dedicated wet tire can when the track isn't wet?"
+    expected_answer: "No, it works the other way around. Per T2.6.5, a dual-purpose dry/wet tire that lacks the tread or grooves required by T2.5.1 simply loses its \"wet\" status -- the team can't race it if the track is declared wet, but the tire can still be used as a dry tire. Per T2.6.6, a tire specifically constructed for wet conditions is the reverse case: it can only be used under \"Damp\" or \"Wet\" operating conditions and cannot be used as a dry tire at all."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T2.6.5"], occurrence: last }
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T2.6.6"], occurrence: last }
+    tags: [near-duplicate]
+    # both rules govern which tires may be used in which conditions and both
+    # collide with the changelog, so both need occurrence: last. The parallel
+    # phrasing ("dry and wet"-designed vs "specifically constructed for wet")
+    # is exactly the kind of near-identical pair reranking should untangle.
+
+  - id: q-041
+    turns:
+      - question: "Does the upper-member height rule for the side impact structure -- the three steel tubes flanking the cockpit -- also apply, range and all, to other impact structures protecting side-projecting components?"
+    expected_answer: "Not quite. The side impact structure's upper member (T3.15.1) must sit at a height between 240 mm and 320 mm above the lowest inside chassis point between the front and main hoop -- a defined range. Other impact structures covered by T3.15.2 (referenced from CV1.3.2, EV4.4.2, and EV5.5.2) only cap that upper member at not higher than 320 mm -- there's no stated lower bound for those."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T3.15.1"] }
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T3.15.2"], occurrence: last }
+    tags: [near-duplicate]
+    # T3.15.1 is unique in the document; T3.15.2 collides with the
+    # changelog and needs occurrence: last. The two rules use almost
+    # identical language for the upper member but one gives a range and the
+    # other only a ceiling -- an easy asymmetry to miss.
+
+  # --- boundary-spanning (5 new; 3 -> 8) ---
+
+  - id: q-042
+    turns:
+      - question: "Can a team run the IA impact test at a velocity other than 7 m/s, and what must they do if they can't meet the resulting energy-absorption requirement?"
+    expected_answer: "Yes, but only in one direction: equivalent higher test velocities are allowed to accommodate a lower total testing mass, as long as the energy absorbed is still 7350 J or more. If a team can't meet these requirements, they must use the standard IA instead."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T3.19.1"], occurrence: last }
+    tags: [boundary-spanning]
+    # the higher-velocity allowance and standard-IA fallback are a single
+    # trailing paragraph that comes after T3.19.1's bulleted deceleration and
+    # energy-absorption requirements -- a fixed-char chunker could easily
+    # split the bullets from this fallback clause. occurrence: last follows
+    # the precedent already set for this same rule ID in q-021.
+
+  - id: q-043
+    turns:
+      - question: "If a team's vehicle has aerodynamic devices or sensors mounted in front of the front bulkhead, what are the three ways they're allowed to prove that combination won't exceed the IA's peak deceleration limit?"
+    expected_answer: "Physical testing of the IA assembly together with the attached non-crushable object(s) (or structurally representative dummies of them) in front of the AIP; combining the peak force from physical testing of the IA assembly with the failure load for mounting the non-crushable object(s), calculated from fastener shear and/or link buckling; or combining the \"standard\" IA peak load of 95 kN with that same failure-load calculation for the non-crushable object(s)' mounting."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T3.19.4"], occurrence: last }
+    tags: [boundary-spanning]
+    # T3.19.4's own three-method bulleted list is split by an actual PDF
+    # page break (53/54), with the rule's opening sentence on one page and
+    # all three methods on the next.
+
+  - id: q-044
+    turns:
+      - question: "How many mechanical relays does a CV shutdown circuit need at minimum and what does each one control, and separately, what must happen to any shutdown-circuit component if it loses power?"
+    expected_answer: "At least two mechanical relays: one for the fuel pump, and at least one for injection and ignition. Separately, every circuit that's part of the shutdown circuit must be designed so that in the de-energized or disconnected state, it opens the shutdown circuit."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["CV4.1.1"] }
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["CV4.1.3"] }
+    tags: [boundary-spanning]
+    # CV4.1.1 and CV4.1.3 are the first and third rules under one heading,
+    # split by a PDF page break (86/87) with the shutdown-circuit schematic
+    # and its figure caption sitting between them. Neither ID collides with
+    # the changelog.
+
+  - id: q-045
+    turns:
+      - question: "During an EV endurance driver change, what has to happen to the TSMS and TSAL before anyone can touch the vehicle, and what happens to the team's time if the whole change takes longer than allotted?"
+    expected_answer: "The ESO must switch off the TSMS and the TSAL must have changed to green before anyone is allowed to touch the vehicle or the outgoing driver can climb out. Separately, each team is given three minutes for the driver change; if it takes longer than that, the extra time is included in the team's final time."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["D7.5.6"] }
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["D7.5.9"] }
+    tags: [boundary-spanning]
+    # D7.5.6 and D7.5.9 are the second-to-last and last steps of a nine-step
+    # driver-change procedure, split by a PDF page break (132/133) with
+    # unrelated steps about seat adjustment and re-securing the second driver
+    # sitting in between. Neither ID appears in the changelog.
+
+  - id: q-046
+    turns:
+      - question: "Where must a compressed-gas cylinder used as an actuating medium sit relative to the rollover protection envelope, and what must it be protected from besides mechanical damage?"
+    expected_answer: "It must be located, along with its pressure regulator, within the rollover protection envelope defined in T1.1.15. It must also be insulated from any heat sources."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T9.1.1"], occurrence: last }
+    tags: [boundary-spanning]
+    # T9.1.1's single bulleted list of requirements runs long enough to cross
+    # a real PDF page break (67/68); the rollover-envelope requirement sits
+    # near the start of the list and the heat-insulation requirement is
+    # second-to-last, on the far side of that break. T9.1.1 also appears in
+    # the changelog, so occurrence: last is required.
+
+  # --- vocabulary-mismatch (5 new; 5 -> 10) ---
+
+  - id: q-047
+    turns:
+      - question: "Can I just top up my own car's tank in the pits, or does someone else have to handle that?"
+    expected_answer: "Someone else has to handle it. Fueling may only take place at the fuel station and must be conducted by officials only."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["A6.9.1"] }
+    tags: [vocabulary-mismatch]
+
+  - id: q-048
+    turns:
+      - question: "Is there any wiggle room on drinking at the venue, or is it a hard zero-tolerance thing?"
+    expected_answer: "It's zero tolerance. Any team member who tests with an alcohol level higher than 0.0% is immediately disqualified for the rest of the competition, and if a second team member also tests above 0.0%, the entire team is disqualified."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["A6.6.2"] }
+    tags: [vocabulary-mismatch]
+
+  - id: q-049
+    turns:
+      - question: "Does my car need something for people to grab onto if we have to push it back to the pits?"
+    expected_answer: "Yes. Each team must have a removable device -- the push bar -- that attaches to the rear of the vehicle and lets two people push and pull the vehicle while standing upright behind it."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T13.1.1"] }
+    tags: [vocabulary-mismatch]
+
+  - id: q-050
+    turns:
+      - question: "Do the spots where the jacks pick up the car need to be marked somehow?"
+    expected_answer: "Yes. On both sides of the vehicle, the jack pickup points must be indicated by orange triangles."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T13.2.4"] }
+    tags: [vocabulary-mismatch]
+
+  - id: q-051
+    turns:
+      - question: "Could I build a brake system that's entirely wires and a computer, with no physical hydraulic backup?"
+    expected_answer: "No. \"Brake-by-wire\" systems are prohibited."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["T6.1.5"] }
+    tags: [vocabulary-mismatch]
+
+  # --- follow-up (4 new; 6 -> 10) ---
+
+  - id: q-052
+    turns:
+      - question: "What immediately starts happening to the e-gear's hydraulic pressure when you open the door or switch on the ignition?"
+        answer: "The electric pump immediately starts building pressure in the accumulator."
+      - question: "What should the driver do if they can still hear it running?"
+    expected_answer: "Wait. If the pump is still audibly running, it hasn't finished building pressure yet, and the correct move is to let it finish before asking the car to do anything -- every shift consumes stored pressure, and a healthy system quietly tops the accumulator back up in the background as you drive."
+    sources:
+      - doc: egear.md
+        answer_location: { type: line_range, start: 21, end: 21 }
+    tags: [follow-up]
+    # "it" has no referent without the prior turn establishing that the
+    # electric pump is the thing that starts running.
+
+  - id: q-053
+    turns:
+      - question: "What replaced the ZF 5HP19 in the 996.2-generation 911, and why?"
+        answer: "Starting in 2002, Porsche replaced it with a Mercedes-Benz 722.6 -- a completely different transmission built by a different company -- because the ZF Tiptronic apparently couldn't handle the extra torque of the bigger, more powerful engines the 996.2 generation introduced."
+      - question: "How many shift maps did that replacement box use, compared to the original?"
+    expected_answer: "The Mercedes-sourced 722.6 shipped with something like 250 shift maps, versus the ZF control unit's roughly five -- letting it tune its behavior far more finely to how the car was actually being driven."
+    sources:
+      - doc: tiptronic.md
+        answer_location: { type: line_range, start: 43, end: 43 }
+    tags: [follow-up]
+    # "that replacement box" has no referent without the prior turn naming
+    # the Mercedes-Benz 722.6.
+
+  - id: q-054
+    turns:
+      - question: "For a normal, pre-selected shift, how does the AMG SpeedShift MCT's shift time compare to a dual-clutch transmission's?"
+        answer: "A DCT can shift a sequential change, where the next gear is already pre-selected, in roughly 50 ms -- faster than the MCT's ~100 ms for a single shift."
+      - question: "What happens if that pre-selected-gear assumption doesn't hold, like for a big downshift?"
+    expected_answer: "A DCT is only that fast when the next gear is pre-armed; asked for an out-of-sequence change, such as a big multi-gear downshift, it slows right down. The MCT, by contrast, shifts an out-of-sequence, multi-gear change just as fast as a single one -- which is why several owners prefer it on the road."
+    sources:
+      - doc: amg_mct.md
+        answer_location: { type: line_range, start: 47, end: 47 }
+    tags: [follow-up]
+    # "that pre-selected-gear assumption" has no referent without the prior
+    # turn's 50 ms/100 ms comparison establishing what pre-selection means.
+
+  - id: q-055
+    turns:
+      - question: "What average speed makes a vehicle count as 'too slow' during dynamic events in dry conditions?"
+        answer: "Below 8 m/s average, based on lap times over two consecutive laps."
+      - question: "Is that threshold the same in wet or damp conditions?"
+    expected_answer: "No, it's lower: below 5 m/s average over two consecutive laps in wet or damp conditions, compared to 8 m/s in dry conditions."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["D9.2.4"], occurrence: last }
+    tags: [follow-up]
+    # "that threshold" depends on the prior turn naming the dry-conditions
+    # figure; D9.2.4 collides with the changelog, so occurrence: last is
+    # required.
+
+  # --- cross-document (4 new; 1 -> 5) ---
+
+  - id: q-056
+    turns:
+      - question: "Both the Formula Bharat rulebook's IMD requirement and the egear document describe a system that shuts things down when it can't confirm everything is working correctly. What triggers each one?"
+    expected_answer: "The Insulation Monitoring Device (IMD) must open the EV shutdown circuit if it detects either an insulation failure or a failure of the IMD itself, and this must happen without any programmable logic involved. In Lamborghini's e-gear, if the two Hall-effect position sensors don't confirm that a commanded gear was actually reached, the system can disable the car outright as a safety measure. Both intervene by cutting the system off entirely once a monitoring or confirmation signal comes back wrong, rather than letting the vehicle keep operating in an unverified state."
+    sources:
+      - doc: fb_rules.pdf
+        answer_location: { type: section, value: ["EV6.3.6"] }
+      - doc: egear.md
+        answer_location: { type: line_range, start: 25, end: 25 }
+    tags: [cross-document, synthesis]
+    # a second instance of the "same underlying problem, two documents" shape
+    # already exploited by q-036, using a different pdf rule and a different
+    # md document so the tag isn't resting on one anchor pair.
+
+  - id: q-057
+    turns:
+      - question: "Both the SMG and Tiptronic documents mention a gearbox that adapts its shifting to the driver over time. Is this treated as new or unusual technology in either document?"
+    expected_answer: "No -- in both, adaptive shift behavior is described as long-standing and ordinary, not a novelty. The Tiptronic document says this adaptive shift logic, learning the driver's habits and shifting accordingly, was already standard in these boxes well before \"adaptive\" became a buzzword. The SMG document separately notes that the SMG's computer is constantly learning how the driver drives and tailoring its shift strategy to suit them, which is exactly why the car can feel alien to a different driver and why flashing and resetting the DME software -- wiping the old adaptations -- is a well-known fix."
+    sources:
+      - doc: tiptronic.md
+        answer_location: { type: line_range, start: 23, end: 23 }
+      - doc: smg.md
+        answer_location: { type: line_range, start: 74, end: 74 }
+    tags: [cross-document, synthesis]
+
+  - id: q-058
+    turns:
+      - question: "Is the Mercedes transmission that Porsche switched to for its post-2002 Tiptronic the same transmission family that AMG later turned into the SpeedShift MCT?"
+    expected_answer: "No. Porsche's post-2002 Tiptronic used the Mercedes-Benz 722.6. AMG's SpeedShift MCT was built by replacing the torque converter in the different 7-speed 722.9 architecture (the 7G-Tronic family, which later evolved into the 9G-Tronic / 725.0). Both are Mercedes automatic transmission families, but they are not the same one."
+    sources:
+      - doc: tiptronic.md
+        answer_location: { type: line_range, start: 41, end: 41 }
+      - doc: amg_mct.md
+        answer_location: { type: line_range, start: 17, end: 17 }
+    tags: [cross-document]
+    # deliberately targets a plausible-sounding but false cross-document
+    # link: the two documents share "Mercedes automatic transmission" and
+    # adjacent 722.x numbering (722.6 vs 722.9), which is exactly the kind of
+    # near-miss a whole-document or coarse-retrieval baseline could conflate
+    # into a false "yes, same gearbox" answer.
+
+  - id: q-059
+    turns:
+      - question: "Both the SMG and e-gear documents converge on the same core piece of ownership advice for driving these single-clutch gearboxes. What is it, and what's the documented consequence of ignoring it?"
+    expected_answer: "Both documents say to drive the car like the manual it fundamentally is -- with an invisible clutch pedal -- rather than like a true automatic. e-gear owners who drive it the automatic way have reportedly needed a clutch replacement inside 4,000 miles, versus roughly 2% wear over 6,000 miles for disciplined drivers; the SMG document's version of the same idea is a deliberate lift off the throttle during a shift, mimicking manual driving, which smooths out the gearbox's clunky, jerky character."
+    sources:
+      - doc: egear.md
+        answer_location: { type: line_range, start: 73, end: 73 }
+      - doc: smg.md
+        answer_location: { type: line_range, start: 72, end: 72 }
+    tags: [cross-document]

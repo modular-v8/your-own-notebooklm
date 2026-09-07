@@ -2,7 +2,9 @@
 
 A from-scratch RAG learning project: build a NotebookLM-style "answer only from this document" system, and measure every retrieval decision against a fixed baseline instead of by feel.
 
-Phase 0 built the measuring instrument: a provider-agnostic eval harness and a whole-document baseline pipeline, no retrieval. Phase 1 added real retrieval — parsing, chunking, local embedding, a persistent vector index, and a retrieval pipeline scored on recall@k and MRR against the same harness. Phase 2 added machine-checkable citations — the retrieval pipeline emits the chunk ids it relied on, and the harness verifies them deterministically (fabrication, citation precision, coverage) with no LLM involved, plus a gold-set schema v2 supporting multi-document entries and a controlled tag vocabulary. Phase 3 (current) adds named document collections that scope retrieval, and multi-turn conversations — a follow-up question like "what about EVs?" is asked the way a person actually asks it, with the harness measuring how much recall suffers when retrieval sees only the raw follow-up and not the conversation that gives it meaning. See [`specs/3-collections/spec.md`](specs/3-collections/spec.md) and [`plan.md`](specs/3-collections/plan.md).
+Phase 0 built the measuring instrument: a provider-agnostic eval harness and a whole-document baseline pipeline, no retrieval. Phase 1 added real retrieval — parsing, chunking, local embedding, a persistent vector index, and a retrieval pipeline scored on recall@k and MRR against the same harness. Phase 2 added machine-checkable citations — the retrieval pipeline emits the chunk ids it relied on, and the harness verifies them deterministically (fabrication, citation precision, coverage) with no LLM involved, plus a gold-set schema v2 supporting multi-document entries and a controlled tag vocabulary. Phase 3 added named document collections that scope retrieval, and multi-turn conversations — a follow-up question like "what about EVs?" is asked the way a person actually asks it, with the harness measuring how much recall suffers when retrieval sees only the raw follow-up and not the conversation that gives it meaning.
+
+Phase 4 (current) tested five retrieval techniques — hybrid lexical+dense search, reranking, query rewriting, structure-aware chunking, and agentic retrieval (the model searches for itself) — each measured entry-by-entry against a frozen baseline, not just by an aggregate score. The result: every technique improved something, and every technique broke something else, so none were adopted outright. Two techniques (query rewriting and agentic retrieval) fully closed the follow-up-question recall gap Phase 3 measured, and agentic retrieval fixed the one cross-document question nothing else in the project has ever answered — but each carries its own cost or side effect, documented rather than shipped. See [`specs/4-retrieval-optimization/spec.md`](specs/4-retrieval-optimization/spec.md) and [`plan.md`](specs/4-retrieval-optimization/plan.md) for the full results.
 
 ## Setup
 
@@ -42,13 +44,18 @@ uv run raglab eval run --gold evals/gold/<name>.yaml --name retrieval --pipeline
 uv run raglab collections
 uv run raglab search "<query>" --collection <name>
 uv run raglab eval run --gold evals/gold/<name>.yaml --name run --pipeline retrieval --collection <name>
+
+# Run a named retrieval technique (see experiments.toml) and compare it
+# entry-by-entry against a frozen baseline report
+uv run raglab eval run --gold evals/gold/<name>.yaml --name run --pipeline retrieval --experiment hybrid-v1
+uv run raglab compare evals/baselines/<baseline-report>.json evals/runs/<run-report>.json
 ```
 
-Provider selection lives in `config.toml` (`[provider].name`), overridable per-run via the `RAGLAB_PROVIDER` environment variable — no code change either way. Retrieval's `top_k` and refusal `score_threshold` live in `config.toml`'s `[retrieval]` section. Document collections are named lists in `config.toml`'s `[collections]` section.
+Provider selection lives in `config.toml` (`[provider].name`), overridable per-run via the `RAGLAB_PROVIDER` environment variable — no code change either way. Retrieval's `top_k` and refusal `score_threshold` live in `config.toml`'s `[retrieval]` section. Document collections are named lists in `config.toml`'s `[collections]` section. Named retrieval-technique configurations live in `experiments.toml`.
 
 ## Status
 
-Phases 0–3 complete and live-verified. Indexing, search, and `whole_doc`/`retrieval` eval runs work end to end against the real corpus (five documents, one a 137-page PDF rulebook), with machine-checkable citations, named collections that scope retrieval, and multi-turn conversation history. Live runs across all six gold sets confirm collection scoping (a not-in-collection question is refused under one collection, answered correctly under another) and the follow-up retrieval deficit Phase 4 exists to close: recall@k on standalone questions held at 80%, but dropped to 50% on follow-up questions asked the way a person actually asks them.
+Phases 0–4 complete and live-verified. Indexing, search, and `whole_doc`/`retrieval`/`agentic` eval runs work end to end against the real corpus (five documents, one a 137-page PDF rulebook), with machine-checkable citations, named collections that scope retrieval, multi-turn conversation history, and five tested retrieval techniques. Live runs across all six gold sets confirm collection scoping (a not-in-collection question is refused under one collection, answered correctly under another) and the follow-up retrieval deficit Phase 3 measured (recall@k held at ~81% on standalone questions but dropped to 50% on follow-ups) — closed to 100% in Phase 4 by two independent techniques (query rewriting, agentic retrieval), each with its own cost, documented rather than adopted outright. See [`specs/4-retrieval-optimization/plan.md`](specs/4-retrieval-optimization/plan.md) for the full per-technique results.
 
 ## Tests
 

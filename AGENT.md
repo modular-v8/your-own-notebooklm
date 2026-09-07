@@ -4,8 +4,6 @@ Instructions for any AI coding agent working in this repository. Humans wanting 
 
 ## General Rules
 
-*Rules inspired by a blog post by Fabien Sanglard, [AGENT.md](https://fabiensanglard.net/agent.md/).*
-
 - When writing something intended for human consumption (comment, commit message, reply to prompt), use as few words as possible. Pick every word meticulously. Be to the point. Less is more.
 - Avoid superlatives and praise. Don't tell me I am absolutely right. Give me the cold hard truth.
 - Avoid magic numbers and strings — extract recurring or meaningful values into descriptive constants or enums. Keep self-explanatory, one-off values inline. If a value comes from a spec (e.g. HTTP 200), use a constant regardless.
@@ -25,7 +23,7 @@ Instructions for any AI coding agent working in this repository. Humans wanting 
   6. Wrap the body manually at 72 characters.
   7. Use the body to explain what and why, not how — the code explains how.
 - When writing or editing the [README.md](README.md), keep it free from overly technical details. Readme is user-facing and anyone looking at it for the first time should have a brief idea of what the tool does, how it works (briefly), and of course the setup and usage commands.
-- Review and update spec and plan files periodically after completion of major milestones.
+- Review and update spec, plan and task files periodically after completion of major milestones and update them with a brief summary of observations. 
 
 ## Tool Specific Rules
 

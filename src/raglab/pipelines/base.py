@@ -61,6 +61,17 @@ class PipelineResult:
     # distinct from an empty list (a block naming nothing). Only pipelines
     # that instruct the model to cite (retrieval.py) ever populate this.
     cited: list[str] | None = None
+    # Set only when query rewriting actually fired (non-empty history and a
+    # rewriter configured) -- None means "not attempted", not "no change",
+    # so a report entry can distinguish the two without re-running anything.
+    rewritten_query: str | None = None
+    # Only AgenticPipeline populates these: how many times the model called
+    # the search tool, and whether it hit the configured ceiling (spec:
+    # "record the entry as capped, and continue the run" -- capped is a
+    # fact about the entry, not a different status; it can still be graded
+    # normally on whatever it managed to retrieve before the ceiling hit).
+    retrieval_calls: int | None = None
+    capped: bool = False
 
 
 class PipelineSkip(Exception):
