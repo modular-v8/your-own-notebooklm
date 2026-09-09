@@ -49,6 +49,7 @@ async def test_answers_from_relevant_chunks_and_records_ids():
 
     assert result.answer == "16 years old."
     assert result.retrieved == ["doc.md:0000", "doc.md:0001"]
+    assert result.retrieved_scores == [0.8, 0.6]
     assert provider.calls  # the model was actually asked
 
 
@@ -75,6 +76,7 @@ async def test_refuses_without_model_call_when_nothing_above_threshold():
 
     assert result.stop_reason == NO_RELEVANT_CHUNKS_STOP_REASON
     assert result.retrieved == []
+    assert result.retrieved_scores == []
     assert result.usage.input_tokens == 0
     assert provider.calls == []
 

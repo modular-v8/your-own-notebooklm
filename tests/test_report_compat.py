@@ -14,10 +14,14 @@ from raglab.evals.report import (
     RoleReportConfig,
     RunConfig,
     TagAggregates,
+    UsageReport,
     compute_delta,
 )
 
 PHASE_1_REPORT_PATH = Path("evals/runs/2026-09-05T17-13-35Z-fb_rules_retrieval.json")
+
+# Predates Phase 5's usage split and retrieved_scores -- both must default cleanly.
+PHASE_4_AGENTIC_REPORT_PATH = Path("evals/runs/2026-09-07T19-34-29Z-phase4_agentic_v1_fb_rules_full.json")
 
 
 def test_real_phase_1_report_loads_with_new_fields_defaulted():
@@ -72,3 +76,35 @@ def test_phase_1_report_deltas_against_phase_2_report():
     assert delta["citation_precision"] is None
     assert delta["fabrication_rate"] is None
     assert delta["mean_coverage"] is None
+
+
+def test_real_phase_4_report_loads_with_usage_split_and_scores_defaulted():
+    report = Report.model_validate_json(PHASE_4_AGENTIC_REPORT_PATH.read_text(encoding="utf-8"))
+    for entry in report.entries:
+        assert entry.retrieved_scores is None
+        assert entry.pruned_discarded is None
+        if entry.usage is not None:
+            assert entry.usage.fresh_input_tokens == 0
+            assert entry.usage.cache_creation_tokens == 0
+            assert entry.usage.cache_read_tokens == 0
+            # input_tokens keeps its pre-existing summed meaning unchanged.
+            assert entry.usage.input_tokens > 0
+
+
+def test_usage_report_split_round_trips_through_json():
+    usage = UsageReport(
+        input_tokens=180,
+        output_tokens=20,
+        fresh_input_tokens=100,
+        cache_creation_tokens=30,
+        cache_read_tokens=50,
+    )
+    entry = EntryReport(id="q-001", status="graded", usage=usage, retrieved_scores=[0.9, 0.7])
+
+    restored = EntryReport.model_validate_json(entry.model_dump_json())
+
+    assert restored.usage.fresh_input_tokens == 100
+    assert restored.usage.cache_creation_tokens == 30
+    assert restored.usage.cache_read_tokens == 50
+    assert restored.usage.input_tokens == 180
+    assert restored.retrieved_scores == [0.9, 0.7]

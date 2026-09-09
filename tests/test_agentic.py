@@ -5,14 +5,40 @@ from __future__ import annotations
 
 import pytest
 
-from raglab.pipelines.agentic import AgenticPipeline
+from raglab.pipelines.agentic import SYSTEM_PROMPT, SYSTEM_PROMPT_TIGHT_CITATIONS, AgenticPipeline
 from raglab.pipelines.base import Query
 from raglab.retrieval.retriever import RetrievedChunk
 from tests.fakes import FakeProvider, ScriptedToolCall, text_completion
 
 
-def _chunk(chunk_id: str, doc: str, text: str) -> RetrievedChunk:
-    return RetrievedChunk(chunk_id=chunk_id, doc=doc, char_start=0, char_end=len(text), text=text, score=0.9)
+def _chunk(chunk_id: str, doc: str, text: str, score: float = 0.9) -> RetrievedChunk:
+    return RetrievedChunk(chunk_id=chunk_id, doc=doc, char_start=0, char_end=len(text), text=text, score=score)
+
+
+def test_default_system_prompt_matches_phase4_exactly_no_tight_citation():
+    # agentic-v1 must stay byte-identical to Phase 4's frozen baseline --
+    # T6.2 measured tight_citations=True as an opt-in, not the default.
+    assert "Cite tightly" not in SYSTEM_PROMPT
+
+
+def test_tight_citations_prompt_instructs_tight_citation():
+    # Phase 5 T6.1/T6.2: cite only what a claim depends on, not everything
+    # read -- opt-in via tight_citations=True, tested and not adopted as
+    # the default (see plan.md As-built notes).
+    assert "Cite tightly" in SYSTEM_PROMPT_TIGHT_CITATIONS
+    assert "not every excerpt you searched or read" in SYSTEM_PROMPT_TIGHT_CITATIONS
+    # Same prompt otherwise -- the instruction is the only addition.
+    assert SYSTEM_PROMPT_TIGHT_CITATIONS.startswith(SYSTEM_PROMPT.split(" If you relied on none")[0])
+
+
+@pytest.mark.asyncio
+async def test_tight_citations_flag_selects_the_right_prompt():
+    provider = FakeProvider([text_completion("answer <citations></citations>")])
+    default_pipeline = AgenticPipeline(provider, _StubRetriever({}))
+    assert default_pipeline._system_prompt() == SYSTEM_PROMPT
+
+    tight_pipeline = AgenticPipeline(provider, _StubRetriever({}), tight_citations=True)
+    assert tight_pipeline._system_prompt() == SYSTEM_PROMPT_TIGHT_CITATIONS
 
 
 class _StubRetriever:
@@ -40,7 +66,7 @@ async def test_answers_without_ever_calling_search():
 
 @pytest.mark.asyncio
 async def test_single_search_then_answer():
-    retriever = _StubRetriever({"minimum age": [_chunk("doc.md:0000", "doc.md", "16 years")]})
+    retriever = _StubRetriever({"minimum age": [_chunk("doc.md:0000", "doc.md", "16 years", score=0.8)]})
     provider = FakeProvider(
         [
             ScriptedToolCall("search", {"query": "minimum age"}),
@@ -53,6 +79,7 @@ async def test_single_search_then_answer():
 
     assert result.retrieval_calls == 1
     assert result.retrieved == ["doc.md:0000"]
+    assert result.retrieved_scores == [0.8]
     assert result.cited == ["doc.md:0000"]
     assert result.capped is False
 

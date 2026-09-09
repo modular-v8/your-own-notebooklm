@@ -83,3 +83,48 @@ k = 5
 
 [agentic-v1.agentic]
 max_calls = 5
+
+# specs/5-adaptive-retrieval T5: identical to agentic-v1 except for
+# prune_top_n, so any difference is attributable to pruning alone.
+[agentic-pruned-8.chunking]
+strategy = "fixed"
+size = 900
+overlap = 150
+
+[agentic-pruned-8.retrieval]
+mode = "dense"
+k = 5
+
+[agentic-pruned-8.agentic]
+max_calls = 5
+prune_top_n = 8
+
+[agentic-pruned-5.chunking]
+strategy = "fixed"
+size = 900
+overlap = 150
+
+[agentic-pruned-5.retrieval]
+mode = "dense"
+k = 5
+
+[agentic-pruned-5.agentic]
+max_calls = 5
+prune_top_n = 5
+
+# specs/5-adaptive-retrieval T6: identical to agentic-v1 except for
+# tight_citations. Measured on Phase 4's 20-entry hard subset (T6.2):
+# citation_precision 68.0% -> 65.6%, an even 4-win/4-loss split per entry --
+# no net benefit, not adopted, kept here for the record only.
+[agentic-tight-citations-v1.chunking]
+strategy = "fixed"
+size = 900
+overlap = 150
+
+[agentic-tight-citations-v1.retrieval]
+mode = "dense"
+k = 5
+
+[agentic-tight-citations-v1.agentic]
+max_calls = 5
+tight_citations = true

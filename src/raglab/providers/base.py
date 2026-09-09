@@ -56,6 +56,13 @@ class ToolCallRecord:
 class Usage:
     input_tokens: int
     output_tokens: int
+    # Cache-aware breakdown (Phase 5): input_tokens keeps its pre-existing
+    # summed meaning (fresh + cache_creation + cache_read) so every caller
+    # and report stays correct; these three are additive detail a provider
+    # may not have -- zero, never None, when unavailable.
+    fresh_input_tokens: int = 0
+    cache_creation_tokens: int = 0
+    cache_read_tokens: int = 0
 
 
 @dataclass(frozen=True)

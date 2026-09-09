@@ -115,7 +115,13 @@ async def _run_entry(
     except Exception as exc:  # provider/transport failure: recorded, not raised, so one bad entry doesn't kill the run
         return EntryReport(id=entry.id, status="errored", error=str(exc)), None
 
-    usage = UsageReport(input_tokens=result.usage.input_tokens, output_tokens=result.usage.output_tokens)
+    usage = UsageReport(
+        input_tokens=result.usage.input_tokens,
+        output_tokens=result.usage.output_tokens,
+        fresh_input_tokens=result.usage.fresh_input_tokens,
+        cache_creation_tokens=result.usage.cache_creation_tokens,
+        cache_read_tokens=result.usage.cache_read_tokens,
+    )
     recall_hit, reciprocal_rank = _score_recall(entry, result.retrieved, gold_spans, chunk_spans)
     citation_result, coverage = _score_citations_and_coverage(
         entry, result.cited, result.retrieved, gold_spans, chunk_spans
@@ -132,6 +138,7 @@ async def _run_entry(
                 answer=result.answer,
                 stop_reason=result.stop_reason,
                 retrieved=result.retrieved,
+                retrieved_scores=result.retrieved_scores,
                 recall_hit=recall_hit,
                 usage=usage,
                 latency_s=result.latency_s,
@@ -143,6 +150,7 @@ async def _run_entry(
                 rewritten_query=result.rewritten_query,
                 retrieval_calls=result.retrieval_calls,
                 capped=result.capped,
+                pruned_discarded=result.pruned_discarded,
             ),
             reciprocal_rank,
         )
@@ -169,6 +177,7 @@ async def _run_entry(
                 answer=result.answer,
                 stop_reason=result.stop_reason,
                 retrieved=result.retrieved,
+                retrieved_scores=result.retrieved_scores,
                 recall_hit=recall_hit,
                 usage=usage,
                 latency_s=result.latency_s,
@@ -179,6 +188,7 @@ async def _run_entry(
                 rewritten_query=result.rewritten_query,
                 retrieval_calls=result.retrieval_calls,
                 capped=result.capped,
+                pruned_discarded=result.pruned_discarded,
             ),
             reciprocal_rank,
         )
@@ -192,6 +202,7 @@ async def _run_entry(
             rationale=judge_result.rationale,
             stop_reason=result.stop_reason,
             retrieved=result.retrieved,
+            retrieved_scores=result.retrieved_scores,
             recall_hit=recall_hit,
             usage=usage,
             latency_s=result.latency_s,
@@ -202,6 +213,7 @@ async def _run_entry(
             rewritten_query=result.rewritten_query,
             retrieval_calls=result.retrieval_calls,
             capped=result.capped,
+            pruned_discarded=result.pruned_discarded,
         ),
         reciprocal_rank,
     )

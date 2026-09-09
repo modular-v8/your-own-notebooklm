@@ -99,10 +99,13 @@ class OpenRouterProvider:
 
             calls = choice.message.tool_calls or []
             if not calls or not tools_by_name:
+                # OpenRouter reports no cache breakdown across the models it
+                # fronts, so the full total is recorded as fresh rather than
+                # split -- zero for the other two, never a guess.
                 return Completion(
                     text=choice.message.content or "",
                     stop_reason=choice.finish_reason or "stop",
-                    usage=Usage(total_input, total_output),
+                    usage=Usage(total_input, total_output, fresh_input_tokens=total_input),
                     tool_calls=tuple(tool_calls),
                     request_params=kwargs,
                 )

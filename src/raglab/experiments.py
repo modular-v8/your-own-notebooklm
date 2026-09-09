@@ -56,6 +56,15 @@ class RerankingConfig:
 @dataclass(frozen=True)
 class AgenticConfig:
     max_calls: int
+    # Retain only the top-N accumulated chunks by score, across every search
+    # call, instead of their union (specs/5-adaptive-retrieval). None keeps
+    # today's unpruned behavior.
+    prune_top_n: int | None = None
+    # specs/5-adaptive-retrieval T6.1: adds one citation-discipline sentence
+    # to the system prompt. False keeps agentic-v1 byte-identical to Phase
+    # 4's frozen baseline -- T6.2 measured this opt-in and found no net
+    # benefit, so it is never the default.
+    tight_citations: bool = False
 
 
 @dataclass(frozen=True)
@@ -94,7 +103,11 @@ def _reranking_from_raw(raw: dict[str, Any] | None) -> RerankingConfig | None:
 
 
 def _agentic_from_raw(raw: dict[str, Any] | None) -> AgenticConfig | None:
-    return None if raw is None else AgenticConfig(max_calls=int(raw["max_calls"]))
+    if raw is None:
+        return None
+    prune_top_n = int(raw["prune_top_n"]) if "prune_top_n" in raw else None
+    tight_citations = bool(raw["tight_citations"]) if "tight_citations" in raw else False
+    return AgenticConfig(max_calls=int(raw["max_calls"]), prune_top_n=prune_top_n, tight_citations=tight_citations)
 
 
 def load_experiments(path: Path = DEFAULT_EXPERIMENTS_PATH) -> dict[str, ExperimentConfig]:

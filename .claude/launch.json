@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "raglab-serve",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "raglab", "serve"],
+      "port": 8000
+    }
+  ]
+}

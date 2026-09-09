@@ -56,6 +56,10 @@ class PipelineResult:
     latency_s: float
     request_params: dict[str, Any] = field(default_factory=dict)
     retrieved: list[str] | None = None
+    # Same order and length as `retrieved`, when populated -- lets an
+    # offline signal study recompute top1/margin/spread without re-running
+    # the retriever (evals.report.EntryReport.retrieved_scores).
+    retrieved_scores: list[float] | None = None
     # The chunk ids the model claimed to have relied on, parsed from its
     # own <citations> block. None means no such block was found (uncited),
     # distinct from an empty list (a block naming nothing). Only pipelines
@@ -72,6 +76,23 @@ class PipelineResult:
     # normally on whatever it managed to retrieve before the ceiling hit).
     retrieval_calls: int | None = None
     capped: bool = False
+    # Only set when pruning is enabled: how many accumulated chunks were
+    # dropped to keep the top-N by score (0 means pruning ran but had
+    # nothing to discard). None means pruning wasn't configured at all.
+    pruned_discarded: int | None = None
+
+
+@dataclass(frozen=True)
+class StreamChunk:
+    """One increment of `RetrievalPipeline.answer_stream()`. `text` is prose
+    only -- the `<citations>` block is never emitted this way. `result`
+    carries the same `PipelineResult` `answer()` would have returned for an
+    identical call, populated only on the terminal chunk (`done=True`) so a
+    caller can persist it without re-deriving citations from raw text."""
+
+    text: str = ""
+    done: bool = False
+    result: PipelineResult | None = None
 
 
 class PipelineSkip(Exception):

@@ -76,6 +76,23 @@ def test_load_experiments_parses_named_entries(tmp_path):
     assert hybrid.retrieval.rrf_k == 60
 
 
+def test_repo_experiments_toml_has_pruned_agentic_variants():
+    experiments = load_experiments(DEFAULT_EXPERIMENTS_PATH)
+
+    assert experiments["agentic-v1"].agentic.prune_top_n is None
+    assert experiments["agentic-pruned-8"].agentic.max_calls == 5
+    assert experiments["agentic-pruned-8"].agentic.prune_top_n == 8
+    assert experiments["agentic-pruned-5"].agentic.prune_top_n == 5
+
+
+def test_repo_experiments_toml_has_tight_citations_variant():
+    experiments = load_experiments(DEFAULT_EXPERIMENTS_PATH)
+
+    assert experiments["agentic-v1"].agentic.tight_citations is False
+    assert experiments["agentic-tight-citations-v1"].agentic.tight_citations is True
+    assert experiments["agentic-tight-citations-v1"].agentic.max_calls == 5
+
+
 def test_missing_file_raises():
     with pytest.raises(ExperimentsError):
         load_experiments(Path("does-not-exist.toml"))

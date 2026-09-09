@@ -1,0 +1,304 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-neutral);
+  color: var(--color-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-body-size);
+  line-height: var(--font-body-line-height);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* ---- picker screen: the one action here is choosing a collection ---- */
+
+.picker-screen {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
+}
+
+.picker-screen h1 {
+  font-size: var(--font-h1-size);
+  font-weight: var(--font-h1-weight);
+  margin: 0;
+}
+
+.picker-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  justify-content: center;
+  max-width: 720px;
+}
+
+.collection-card {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border: 1px solid transparent;
+  border-radius: var(--rounded-lg);
+  padding: var(--spacing-lg);
+  min-width: 200px;
+  text-align: left;
+  transition: border-color 120ms ease;
+}
+
+.collection-card:hover,
+.collection-card:focus-visible {
+  border-color: var(--color-tertiary);
+  outline: none;
+}
+
+.collection-card .name {
+  font-weight: 600;
+  margin-bottom: var(--spacing-sm);
+}
+
+.collection-card .meta {
+  font-size: var(--font-label-size);
+  font-weight: var(--font-label-weight);
+  letter-spacing: var(--font-label-tracking);
+  text-transform: uppercase;
+  color: var(--color-secondary);
+}
+
+/* ---- chat screen: the one action here is asking a question ---- */
+
+.chat-screen {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-surface);
+}
+
+.chat-header .label {
+  font-size: var(--font-label-size);
+  font-weight: var(--font-label-weight);
+  letter-spacing: var(--font-label-tracking);
+  text-transform: uppercase;
+  color: var(--color-secondary);
+}
+
+.chat-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.turn-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.turn .question {
+  font-weight: 600;
+  margin-bottom: var(--spacing-sm);
+}
+
+.answer-card {
+  background: var(--color-surface);
+  border-radius: var(--rounded-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.answer-card + .answer-card {
+  margin-top: var(--spacing-sm);
+  border-left: 2px solid var(--color-secondary);
+}
+
+.answer-card .pipeline-label {
+  font-size: var(--font-label-size);
+  font-weight: var(--font-label-weight);
+  letter-spacing: var(--font-label-tracking);
+  text-transform: uppercase;
+  color: var(--color-secondary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.answer-text {
+  white-space: pre-wrap;
+}
+
+.answer-error {
+  color: var(--color-secondary);
+  background: rgba(240, 239, 233, 0.06);
+  border-radius: var(--rounded-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-label-size);
+  margin-top: var(--spacing-sm);
+}
+
+.citation-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.citation-chip {
+  background: rgba(240, 239, 233, 0.08);
+  color: var(--color-primary);
+  border: 1px solid rgba(240, 239, 233, 0.14);
+  border-radius: var(--rounded-sm);
+  padding: 4px 10px;
+  font-size: var(--font-label-size);
+}
+
+.citation-chip:hover,
+.citation-chip:focus-visible {
+  background: rgba(240, 239, 233, 0.16);
+}
+
+.no-sources {
+  color: var(--color-secondary);
+  font-size: var(--font-label-size);
+  font-style: italic;
+  margin-top: var(--spacing-md);
+}
+
+.escalate-row {
+  margin-top: var(--spacing-md);
+}
+
+.escalate-button {
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-secondary);
+  border-radius: var(--rounded-md);
+  padding: 8px 16px;
+  font-size: var(--font-label-size);
+}
+
+.escalate-button:hover {
+  border-color: var(--color-primary);
+}
+
+.escalate-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.escalating-state {
+  color: var(--color-secondary);
+  font-size: var(--font-label-size);
+  font-style: italic;
+}
+
+.ask-row {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--color-surface);
+}
+
+.ask-row input {
+  flex: 1;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border: 1px solid transparent;
+  border-radius: var(--rounded-md);
+  padding: 12px 16px;
+  font-family: inherit;
+  font-size: var(--font-body-size);
+}
+
+.ask-row input:focus {
+  outline: none;
+  border-color: var(--color-tertiary);
+}
+
+.ask-button {
+  background: var(--color-tertiary);
+  color: var(--color-on-primary);
+  border: none;
+  border-radius: var(--rounded-md);
+  padding: 12px 20px;
+  font-weight: 600;
+}
+
+.ask-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.stream-error {
+  color: var(--color-secondary);
+  background: var(--color-surface);
+  font-size: var(--font-label-size);
+  margin: 0 var(--spacing-lg) var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--rounded-sm);
+}
+
+/* ---- source panel: citation emphasis via surface tint, not a second accent ---- */
+
+.source-panel {
+  width: 360px;
+  flex-shrink: 0;
+  background: var(--color-surface);
+  border-left: 1px solid rgba(240, 239, 233, 0.1);
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+}
+
+.source-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--spacing-md);
+}
+
+.source-panel-header .doc {
+  font-weight: 600;
+}
+
+.source-panel-header .lines {
+  font-size: var(--font-label-size);
+  color: var(--color-secondary);
+}
+
+.source-panel button.close {
+  background: none;
+  border: none;
+  color: var(--color-secondary);
+  font-size: 1rem;
+}
+
+.source-panel .chunk-text {
+  white-space: pre-wrap;
+  background: var(--color-neutral);
+  border-radius: var(--rounded-md);
+  padding: var(--spacing-md);
+}
+
+.source-panel .unresolvable {
+  color: var(--color-secondary);
+  font-style: italic;
+}

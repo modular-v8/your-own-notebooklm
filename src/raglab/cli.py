@@ -56,6 +56,10 @@ from .retrieval.rewriter import QueryRewriter
 
 load_dotenv()  # loads .env into the environment before any provider reads a key
 
+DEFAULT_CONVERSATIONS_DIR = Path("conversations")
+DEFAULT_STATIC_DIR = Path("web/dist")
+SERVE_HOST = "127.0.0.1"  # localhost only, per spec -- never configurable
+
 app = typer.Typer(no_args_is_help=True)
 providers_app = typer.Typer(no_args_is_help=True)
 gold_app = typer.Typer(no_args_is_help=True)
@@ -350,6 +354,39 @@ def collections_list(
             typer.echo(f"  - {doc}")
 
 
+@app.command("serve")
+def serve(
+    port: int = typer.Option(8000, "--port"),
+    config_path: Path = typer.Option(DEFAULT_CONFIG_PATH, "--config"),
+    corpus_dir: Path = typer.Option(DEFAULT_CORPUS_DIR, "--corpus-dir"),
+    index_dir: Path = typer.Option(DEFAULT_FIXED_INDEX_DIR, "--index-dir"),
+    conversations_dir: Path = typer.Option(DEFAULT_CONVERSATIONS_DIR, "--conversations-dir"),
+    experiments_path: Path = typer.Option(DEFAULT_EXPERIMENTS_PATH, "--experiments"),
+    static_dir: Path = typer.Option(DEFAULT_STATIC_DIR, "--static-dir", help="Built frontend (web/dist); skipped if absent"),
+) -> None:
+    """Serve the backend and the built frontend on localhost. Never binds
+    an external interface (spec: local-first, single-user)."""
+    import uvicorn
+
+    from .api.app import create_app
+
+    try:
+        asgi_app = create_app(
+            config_path=config_path,
+            corpus_dir=corpus_dir,
+            index_dir=index_dir,
+            conversations_dir=conversations_dir,
+            experiments_path=experiments_path,
+            static_dir=static_dir,
+        )
+    except (ProviderAuthError, RuntimeError) as exc:
+        typer.echo(f"Cannot start server: {exc}", err=True)
+        raise typer.Exit(code=1) from None
+
+    typer.echo(f"Serving on http://{SERVE_HOST}:{port} (localhost only)")
+    uvicorn.run(asgi_app, host=SERVE_HOST, port=port)
+
+
 @app.command("search")
 def search(
     query: str = typer.Argument(..., help="Search query"),
@@ -513,8 +550,15 @@ def eval_run(
 
         if pipeline_name == "agentic":
             max_calls = experiment.agentic.max_calls if experiment.agentic is not None else DEFAULT_MAX_CALLS
+            prune_top_n = experiment.agentic.prune_top_n if experiment.agentic is not None else None
+            tight_citations = experiment.agentic.tight_citations if experiment.agentic is not None else False
             pipeline = AgenticPipeline(
-                answer_provider, Retriever(store), top_k=experiment.retrieval.k, max_calls=max_calls
+                answer_provider,
+                Retriever(store),
+                top_k=experiment.retrieval.k,
+                max_calls=max_calls,
+                prune_top_n=prune_top_n,
+                tight_citations=tight_citations,
             )
         else:
             reranker = None

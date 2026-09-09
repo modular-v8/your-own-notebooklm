@@ -100,6 +100,11 @@ class Aggregates(BaseModel):
 class UsageReport(BaseModel):
     input_tokens: int
     output_tokens: int
+    # Cache-aware breakdown (Phase 5), default 0 so a pre-Phase-5 report
+    # still loads; input_tokens keeps its pre-existing summed meaning.
+    fresh_input_tokens: int = 0
+    cache_creation_tokens: int = 0
+    cache_read_tokens: int = 0
 
 
 class EntryReport(BaseModel):
@@ -110,6 +115,10 @@ class EntryReport(BaseModel):
     rationale: str | None = None
     stop_reason: str | None = None
     retrieved: list[str] | None = None
+    # Phase 4's reports stored only chunk ids, not scores, which blocked any
+    # offline signal study over them (plan.md §Approach Summary) -- scores
+    # now ride alongside `retrieved`, same order, same length.
+    retrieved_scores: list[float] | None = None
     recall_hit: bool | None = None
     usage: UsageReport | None = None
     latency_s: float | None = None
@@ -121,6 +130,10 @@ class EntryReport(BaseModel):
     rewritten_query: str | None = None
     retrieval_calls: int | None = None
     capped: bool = False
+    # Only AgenticPipeline populates this, and only when pruning is
+    # configured -- how many accumulated chunks were dropped to keep the
+    # top-N by score. None: pruning wasn't configured.
+    pruned_discarded: int | None = None
 
 
 class Report(BaseModel):

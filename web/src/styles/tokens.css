@@ -1,0 +1,36 @@
+/* Generated from DESIGN.md's token block. Do not hand-tune a value here
+   without updating DESIGN.md first -- this file exists to keep the two in
+   sync, not to diverge from it. */
+
+:root {
+  --color-primary: #f0efe9;
+  --color-secondary: #8a857a;
+  --color-tertiary: #ffb98c; /* the single accent -- one action per screen */
+  --color-neutral: #17181b;
+  --color-surface: #1f2024;
+  --color-on-primary: #17181b;
+
+  --font-family: "Manrope", sans-serif;
+
+  --font-display-size: 3.75rem;
+  --font-display-weight: 600;
+  --font-display-tracking: -0.025em;
+
+  --font-h1-size: 2rem;
+  --font-h1-weight: 600;
+
+  --font-body-size: 0.95rem;
+  --font-body-line-height: 1.55;
+
+  --font-label-size: 0.72rem;
+  --font-label-weight: 600;
+  --font-label-tracking: 0.06em;
+
+  --rounded-sm: 8px;
+  --rounded-md: 14px;
+  --rounded-lg: 22px;
+
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 32px;
+}

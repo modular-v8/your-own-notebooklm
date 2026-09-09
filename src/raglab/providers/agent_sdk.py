@@ -63,12 +63,16 @@ def _usage_from_result(message: ResultMessage) -> Usage:
     raw = message.usage or {}
     # Anthropic's usage splits input into three counters (fresh, cache-write,
     # cache-read) that must be summed for the true total tokens billed.
-    input_tokens = (
-        raw.get("input_tokens", 0)
-        + raw.get("cache_creation_input_tokens", 0)
-        + raw.get("cache_read_input_tokens", 0)
+    fresh = raw.get("input_tokens", 0)
+    cache_creation = raw.get("cache_creation_input_tokens", 0)
+    cache_read = raw.get("cache_read_input_tokens", 0)
+    return Usage(
+        input_tokens=fresh + cache_creation + cache_read,
+        output_tokens=raw.get("output_tokens", 0),
+        fresh_input_tokens=fresh,
+        cache_creation_tokens=cache_creation,
+        cache_read_tokens=cache_read,
     )
-    return Usage(input_tokens, raw.get("output_tokens", 0))
 
 
 def _build_tool_server(tools: list[ToolSpec], sink: list[ToolCallRecord]):

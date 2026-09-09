@@ -67,6 +67,9 @@ class AnthropicProvider:
         tool_calls: list[ToolCallRecord] = []
         total_input = 0
         total_output = 0
+        total_fresh = 0
+        total_cache_creation = 0
+        total_cache_read = 0
 
         for _ in range(DEFAULT_TOOL_LOOP_LIMIT):
             kwargs: dict = {
@@ -84,8 +87,18 @@ class AnthropicProvider:
             except anthropic.AuthenticationError as exc:
                 raise ProviderAuthError("anthropic", "ANTHROPIC_API_KEY") from exc
 
-            total_input += response.usage.input_tokens
+            # Anthropic's Usage.input_tokens is the fresh (non-cached) count;
+            # cache_creation/cache_read_input_tokens are None when prompt
+            # caching isn't in play, not zero, so they need `or 0` here to
+            # stay additive with total_input.
+            fresh = response.usage.input_tokens
+            cache_creation = response.usage.cache_creation_input_tokens or 0
+            cache_read = response.usage.cache_read_input_tokens or 0
+            total_input += fresh + cache_creation + cache_read
             total_output += response.usage.output_tokens
+            total_fresh += fresh
+            total_cache_creation += cache_creation
+            total_cache_read += cache_read
 
             if response.stop_reason != "tool_use" or not tools_by_name:
                 text = "".join(
@@ -94,7 +107,13 @@ class AnthropicProvider:
                 return Completion(
                     text=text,
                     stop_reason=response.stop_reason or "end_turn",
-                    usage=Usage(total_input, total_output),
+                    usage=Usage(
+                        total_input,
+                        total_output,
+                        fresh_input_tokens=total_fresh,
+                        cache_creation_tokens=total_cache_creation,
+                        cache_read_tokens=total_cache_read,
+                    ),
                     tool_calls=tuple(tool_calls),
                     request_params=kwargs,
                 )
