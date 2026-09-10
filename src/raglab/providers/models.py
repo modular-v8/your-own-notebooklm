@@ -30,6 +30,16 @@ MODEL_REGISTRY: dict[str, ModelSpec] = {
         anthropic_id="claude-opus-5",
         openrouter_id="anthropic/claude-opus-5",
     ),
+    # 4.5-generation model (Phase 7): does not take the 5-family's
+    # thinking/effort params. AgentSDKProvider never sets them, so this
+    # alias is safe there; openrouter_id is unverified since this phase
+    # only exercises agent_sdk.
+    "claude-haiku-4-5": ModelSpec(
+        alias="claude-haiku-4-5",
+        context_window=200_000,
+        anthropic_id="claude-haiku-4-5-20251001",
+        openrouter_id="anthropic/claude-haiku-4.5",
+    ),
 }
 
 
