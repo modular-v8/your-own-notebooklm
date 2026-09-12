@@ -146,6 +146,36 @@ button {
   white-space: pre-wrap;
 }
 
+.answer-text > *:first-child {
+  margin-top: 0;
+}
+
+.answer-text > *:last-child {
+  margin-bottom: 0;
+}
+
+.answer-text p,
+.answer-text ul,
+.answer-text ol {
+  margin: 0 0 var(--spacing-sm) 0;
+}
+
+.answer-text ul,
+.answer-text ol {
+  padding-left: var(--spacing-lg);
+}
+
+.answer-text code {
+  background: rgba(240, 239, 233, 0.08);
+  border-radius: var(--rounded-sm);
+  padding: 1px 4px;
+  font-size: 0.9em;
+}
+
+.answer-text a {
+  color: var(--color-primary);
+}
+
 .answer-error {
   color: var(--color-secondary);
   background: rgba(240, 239, 233, 0.06);
