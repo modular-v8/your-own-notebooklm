@@ -24,6 +24,7 @@ Instructions for any AI coding agent working in this repository. Humans wanting 
   7. Use the body to explain what and why, not how — the code explains how.
 - When writing or editing the [README.md](README.md), keep it free from overly technical details. Readme is user-facing and anyone looking at it for the first time should have a brief idea of what the tool does, how it works (briefly), and of course the setup and usage commands.
 - Review and update spec, plan and task files periodically after completion of major milestones and update them with a brief summary of observations. 
+- In case you notice a sudden and surprising change in the codebase, there is a good chance the user might have done it without informing you. Good practice to confirm with the user by interrupting the task, and then proceed accordingly. Might save you from going into a confusion loop.
 
 ## Tool Specific Rules
 

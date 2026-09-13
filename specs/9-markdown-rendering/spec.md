@@ -11,7 +11,7 @@ Someone reading an AI answer in the chat UI sees actual formatting — bold text
 
 ## out of scope
 - The question input box — stays plain text, untouched.
-- Citation chip rendering/styling.
+- Citation chip rendering/styling. *(Amended 2026-09-13 — see the amendment below, which brings inline chunk-id references into scope.)*
 - Any backend prompt (`retrieval.py`, `whole_doc.py`, `agentic.py` `SYSTEM_PROMPT`s) — left exactly as-is; the model's markdown output is taken as given, not suppressed.
 - Any other UI text (headers, escalation status text, error banners).
 
@@ -40,3 +40,68 @@ Someone reading an AI answer in the chat UI sees actual formatting — bold text
 - IF the answer text contains no markdown syntax, the system SHALL render it identically to current plain-text behavior — no stray escaping, no visual diff.
 - IF markdown parsing fails for any input, the system SHALL NOT crash the chat UI — the underlying text SHALL remain visible.
 - IF the answer text contains HTML-like content, the system SHALL NOT render it as live HTML — markdown rendering must not become an HTML/script-injection path.
+
+---
+
+# Amendment (2026-09-13): inline chunk-id references
+
+Written after the original shipped. Markdown rendering works; this covers a
+defect it made visible.
+
+## The observed problem
+
+Baseline answers contain stray bracketed references in the prose —
+`[fb_rules.pdf:0042]` — which render as literal brackets, or occasionally as a
+broken link. Agentic answers do not.
+
+## Diagnosis: neither the renderer nor the model is at fault
+
+The two pipelines use different prompts, and the baseline's teaches the
+convention twice over.
+
+Its excerpts are formatted with the id in brackets:
+
+```python
+excerpts = "\n\n".join(f"[{c.chunk_id}] ({c.doc})\n{c.text}" for c in chunks)
+```
+
+and its system prompt closes with *"Use exactly the chunk ids shown **in
+brackets** before each excerpt below; do not invent ids."*
+
+So the baseline model sees `[fb_rules.pdf:0042] (fb_rules.pdf)` before every
+excerpt, is told the ids live in brackets, and mirrors that notation inline in
+its prose. The renderer is faithfully displaying text the model wrote.
+
+`AgenticPipeline` has no equivalent line — it cannot, because its chunks arrive
+as tool results rather than pre-formatted in the system prompt. It never learns
+the convention, so it never emits it. That is the entire difference.
+
+A second-order hazard: `[id] (doc)` is one space away from markdown link
+syntax. Depending on exactly what the model echoes, the same defect surfaces
+either as literal brackets or as a broken link.
+
+## The fix cannot be in the prompt
+
+`RetrievalPipeline.SYSTEM_PROMPT` and `_build_messages` **are** the frozen
+Phase 4 baseline. Every comparison in Phases 4–7 — agentic's +22.6 recall
+points, every citation-precision figure, the entire Haiku study — rests on that
+prompt producing those exact messages. Removing the brackets from the excerpt
+format is the obvious fix and would silently invalidate all of it.
+
+This is the same constraint that produced `answer_stream()` beside `answer()`
+rather than a change to it: **the repair happens in the rendering layer.**
+
+## The work itself is Phase 10
+
+This amendment records the **diagnosis** — it belongs with Phase 9, because it
+explains a defect Phase 9's rendering made visible, and because the
+prompt-is-frozen constraint is the thing most likely to be violated by someone
+fixing it.
+
+The **build** is specified in
+[`specs/10-inline-citations/BRIEF.md`](../10-inline-citations/BRIEF.md): render
+well-formed inline `[chunk-id]` tokens as citation chips via a remark plugin,
+reusing Phase 6's chip component and chunk endpoint, touching nothing under
+`src/raglab/`.
+
+Deliberately kept in one place so the two documents cannot drift.

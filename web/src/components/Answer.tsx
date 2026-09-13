@@ -1,8 +1,10 @@
 import { Component, type ReactNode } from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components, defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 import type { AnswerRecord } from "../api";
+import { InlineChunkRef } from "../markdown/InlineChunkRef";
+import { CHUNK_REF_URL_SCHEME, remarkChunkReferences } from "../markdown/remarkChunkReferences";
 
 type Props = {
   answer: AnswerRecord;
@@ -31,12 +33,33 @@ class MarkdownErrorBoundary extends Component<BoundaryProps, BoundaryState> {
 }
 
 export function Answer({ answer, onCiteClick, pending = false }: Props) {
+  const components: Components = {
+    a: ({ href, children }) => {
+      if (href?.startsWith(CHUNK_REF_URL_SCHEME)) {
+        return <InlineChunkRef chunkId={href.slice(CHUNK_REF_URL_SCHEME.length)} onCiteClick={onCiteClick} />;
+      }
+      return <a href={href}>{children}</a>;
+    },
+  };
+
+  // react-markdown strips any URL protocol it doesn't recognize by default
+  // (XSS hardening) -- raglab-chunk: is our own internal marker, not a real
+  // link, so it needs an explicit allowance; everything else still goes
+  // through the default sanitizer unchanged.
+  const urlTransform = (url: string) => (url.startsWith(CHUNK_REF_URL_SCHEME) ? url : defaultUrlTransform(url));
+
   return (
     <div className="answer-card">
       <div className="pipeline-label">{answer.pipeline}</div>
       <div className="answer-text">
         <MarkdownErrorBoundary fallback={answer.text}>
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{answer.text}</ReactMarkdown>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkChunkReferences]}
+            components={components}
+            urlTransform={urlTransform}
+          >
+            {answer.text}
+          </ReactMarkdown>
         </MarkdownErrorBoundary>
       </div>
 

@@ -403,6 +403,12 @@ button {
   background: rgba(240, 239, 233, 0.16);
 }
 
+.inline-citation-chip {
+  padding: 1px 6px;
+  vertical-align: baseline;
+  line-height: inherit;
+}
+
 .no-sources {
   color: var(--color-secondary);
   font-size: var(--font-label-size);
