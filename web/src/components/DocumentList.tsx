@@ -27,16 +27,14 @@ export function DocumentList({ documents, onRemove, onDelete }: Props) {
             {doc.empty ? "Indexed, no text found" : STATE_LABEL[doc.state]}
           </div>
           {doc.error && <div className="document-error">{doc.error}</div>}
-          {!doc.locked && (
-            <div className="document-actions">
-              <button className="icon-button" title="Remove from this collection" onClick={() => onRemove(doc.name)}>
-                −
-              </button>
-              <button className="icon-button" title="Delete from disk" onClick={() => onDelete(doc.name)}>
-                ×
-              </button>
-            </div>
-          )}
+          <div className="document-actions">
+            <button className="icon-button" title="Remove from this collection" onClick={() => onRemove(doc.name)}>
+              −
+            </button>
+            <button className="icon-button" title="Delete from disk" onClick={() => onDelete(doc.name)}>
+              ×
+            </button>
+          </div>
         </div>
       ))}
     </div>

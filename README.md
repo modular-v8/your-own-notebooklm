@@ -39,8 +39,15 @@ uv run raglab gold validate evals/gold/<name>.yaml
 # marking which begin a line -- for authoring new gold entries (no model call)
 uv run raglab gold locate <anchor> [--doc <name>]
 
-# Parse, chunk, and embed the corpus into a local vector index (no model call;
-# downloads the embedding model once on first use, then runs fully offline)
+# Optional: build the demo fixture -- a 5-document corpus this project's own
+# findings are measured against (no model call; downloads the embedding model
+# once on first use, then runs fully offline). Not required to use the tool:
+# `raglab serve` starts with an empty index and the first upload creates one.
+#
+# CAUTION: this rebuilds the index from evals/corpus/ alone. If you've
+# uploaded documents through the browser interface, running this afterward
+# silently drops them from the index -- the files stay on disk in library/,
+# but the app shows them as "failed" until you delete and re-upload them.
 uv run raglab index
 
 # Search the index from the terminal
@@ -63,6 +70,8 @@ uv run raglab compare evals/baselines/<baseline-report>.json evals/runs/<run-rep
 # Serve the browser interface
 uv run raglab serve
 ```
+
+Documents uploaded through the browser interface live in `library/` and share the same index as `evals/corpus/`. **Once you've uploaded anything, avoid running `uv run raglab index` again** — it rebuilds the index from `evals/corpus/` alone and has no awareness of uploads, so it silently drops them from the index (the files themselves are untouched).
 
 Provider selection lives in `config.toml` (`[provider].name`), overridable per-run via the `RAGLAB_PROVIDER` environment variable — no code change either way. Retrieval's `top_k` and refusal `score_threshold` live in `config.toml`'s `[retrieval]` section. Document collections are named lists in `config.toml`'s `[collections]` section. Named retrieval-technique configurations live in `experiments.toml`.
 

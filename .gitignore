@@ -8,7 +8,7 @@ evals/runs/*
 !evals/runs/.gitkeep
 evals/index/
 conversations/
-docs/
+library/
 collections.json
 web/node_modules/
 web/dist/

@@ -5,6 +5,10 @@ large PDF is real CPU time; a request held open that long is indistinguishable
 from a hang) -- the actual rebuild runs in a background task, serialized
 through `state.index_lock` so two uploads never interleave writes to the same
 `vectors.npy`.
+
+Listing and deletion are scoped to `uploads_dir` (the user's own library)
+only -- `evals/corpus/` never appears here, even once indexed, so a person
+using the web app never learns the fixture exists (spec amendment).
 """
 
 from __future__ import annotations
@@ -14,14 +18,12 @@ from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 
-from ..collections import (
-    CollectionNotFoundError,
-    LockedCollectionError,
-)
+from ..collections import CollectionNotFoundError
+from ..corpus import load_corpus, load_document
 from ..index.builder import IndexBuilder
 from ..parsers.registry import parser_for
 from .document_state import derive_document_state
-from .indexing import IndexInvarianceError, load_all_documents, rebuild_index, update_document_collections
+from .indexing import IndexInvarianceError, rebuild_index, update_document_collections
 
 router = APIRouter()
 
@@ -36,11 +38,19 @@ def _safe_filename(filename: str) -> str:
 
 
 def _existing_document_names(state) -> set[str]:
-    return set(load_all_documents(state.corpus_dir, state.uploads_dir))
+    # Both directories, so an upload can never collide with an eval-corpus
+    # filename either -- chunk ids are {doc}:{ordinal}, and a collision
+    # would corrupt retrieval for both documents even if the fixture is
+    # never indexed. Reading names here is not indexing.
+    names = set(load_corpus(state.corpus_dir))
+    if state.uploads_dir.exists():
+        names |= set(load_corpus(state.uploads_dir))
+    return names
 
 
 async def _run_index_job(state, job_id: str, doc: str) -> None:
     state.jobs.set_state(job_id, "parsing")
+    document = load_document(state.uploads_dir / doc)
     async with state.index_lock:
         state.jobs.set_state(job_id, "embedding")
         builder = IndexBuilder(state.store, state.embedder, chunking=state.chunking)
@@ -53,7 +63,7 @@ async def _run_index_job(state, job_id: str, doc: str) -> None:
                 corpus_dir=state.corpus_dir,
                 uploads_dir=state.uploads_dir,
                 collections=state.collections.all(),
-                eval_doc_names=state.eval_doc_names,
+                adding={doc: document},
             )
         except IndexInvarianceError as exc:
             state.jobs.set_state(job_id, "failed", error=str(exc))
@@ -77,9 +87,7 @@ async def _run_index_job(state, job_id: str, doc: str) -> None:
 @router.post("/api/collections/{name}/documents", status_code=202)
 async def upload_document(name: str, request: Request, file: UploadFile = File(...)) -> dict:
     state = request.app.state.raglab
-    if name in state.collections.locked_names:
-        raise HTTPException(status_code=403, detail=f"collection {name!r} is locked and cannot be modified")
-    if name not in state.collections.all():
+    if name not in state.collections.user():
         raise HTTPException(status_code=404, detail=f"collection {name!r} not found")
 
     doc_name = _safe_filename(file.filename or "")
@@ -105,7 +113,7 @@ async def upload_document(name: str, request: Request, file: UploadFile = File(.
 @router.get("/api/documents")
 async def list_documents(request: Request) -> list[dict]:
     state = request.app.state.raglab
-    documents = load_all_documents(state.corpus_dir, state.uploads_dir)
+    documents = load_corpus(state.uploads_dir) if state.uploads_dir.exists() else {}
     manifest = state.store.load_manifest() if state.store.exists() else None
     manifest_docs = manifest.documents if manifest is not None else {}
 
@@ -117,7 +125,6 @@ async def list_documents(request: Request) -> list[dict]:
         rows.append(
             {
                 "name": doc_name,
-                "locked": doc_name in state.eval_doc_names,
                 "collections": state.collections.collections_for(doc_name),
                 "state": doc_state,
                 "chunk_count": entry.chunk_count if entry is not None else None,
@@ -149,8 +156,6 @@ async def remove_document_from_collection(name: str, doc: str, request: Request)
     state = request.app.state.raglab
     try:
         state.collections.remove_document(name, doc)
-    except LockedCollectionError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
     except CollectionNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -162,9 +167,9 @@ async def remove_document_from_collection(name: str, doc: str, request: Request)
 @router.delete("/api/documents/{doc}")
 async def delete_document(doc: str, request: Request, confirm: bool = Query(False)) -> dict:
     state = request.app.state.raglab
-    if doc in state.eval_doc_names:
-        raise HTTPException(status_code=403, detail=f"{doc!r} is part of the eval corpus and cannot be deleted")
 
+    # Scoped to uploads_dir only -- a doc that only exists in evals/corpus/
+    # (or not at all) reads identically as 404, never revealing which.
     path = state.uploads_dir / doc
     if not path.exists():
         raise HTTPException(status_code=404, detail=f"document {doc!r} not found")
@@ -192,7 +197,7 @@ async def delete_document(doc: str, request: Request, confirm: bool = Query(Fals
             corpus_dir=state.corpus_dir,
             uploads_dir=state.uploads_dir,
             collections=state.collections.all(),
-            eval_doc_names=state.eval_doc_names,
+            removing=frozenset([doc]),
         )
         state.refresh_chunk_cache()
 

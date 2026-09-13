@@ -15,9 +15,9 @@ from tests.fakes import FakeProvider, text_completion
 def test_create_conversation_requires_known_collection(tmp_path):
     client = TestClient(make_app(tmp_path))
 
-    ok = client.post("/api/conversations", json={"collection": "rules"})
+    ok = client.post("/api/conversations", json={"collection": "docs"})
     assert ok.status_code == 200
-    assert ok.json()["collection"] == "rules"
+    assert ok.json()["collection"] == "docs"
 
     bad = client.post("/api/conversations", json={"collection": "nope"})
     assert bad.status_code == 400
@@ -26,10 +26,21 @@ def test_create_conversation_requires_known_collection(tmp_path):
     assert missing.status_code == 422
 
 
+def test_reserved_collection_is_refused_identically_to_unknown(tmp_path):
+    # config.toml's collections never reach the API (spec amendment) -- a
+    # conversation can't be scoped to a fixture collection the app hides.
+    client = TestClient(make_app(tmp_path, collections={"rules": ["fb_rules.pdf"]}))
+
+    reserved = client.post("/api/conversations", json={"collection": "rules"})
+    unknown = client.post("/api/conversations", json={"collection": "nope"})
+
+    assert reserved.status_code == unknown.status_code == 400
+
+
 def test_ask_a_question_streams_tokens_then_citations_then_done(tmp_path):
     provider = FakeProvider([text_completion(f"16 years old.\n<citations>{CHUNK_ID}</citations>")])
     client = TestClient(make_app(tmp_path, baseline_provider=provider))
-    conversation_id = client.post("/api/conversations", json={"collection": "rules"}).json()["id"]
+    conversation_id = client.post("/api/conversations", json={"collection": "docs"}).json()["id"]
 
     response = client.post(
         f"/api/conversations/{conversation_id}/turns", json={"question": "What is the minimum age?"}
@@ -52,7 +63,7 @@ def test_provider_error_mid_stream_preserves_partial_answer(tmp_path):
 
     provider = _FailingProvider([])
     client = TestClient(make_app(tmp_path, baseline_provider=provider))
-    conversation_id = client.post("/api/conversations", json={"collection": "rules"}).json()["id"]
+    conversation_id = client.post("/api/conversations", json={"collection": "docs"}).json()["id"]
 
     response = client.post(f"/api/conversations/{conversation_id}/turns", json={"question": "Q?"})
 
@@ -71,7 +82,7 @@ def test_conversation_survives_simulated_restart(tmp_path):
     provider = FakeProvider([text_completion("16.")])
     state = make_state(tmp_path, baseline_provider=provider)
     conversation_id = TestClient(build_app(state)).post(
-        "/api/conversations", json={"collection": "rules"}
+        "/api/conversations", json={"collection": "docs"}
     ).json()["id"]
 
     first_app = build_app(state)
@@ -91,7 +102,7 @@ def test_escalation_is_cached_after_first_call(tmp_path):
     baseline_provider = FakeProvider([text_completion("16.")])
     agentic_provider = FakeProvider([text_completion(f"16, more thoroughly.\n<citations>{CHUNK_ID}</citations>")])
     client = TestClient(make_app(tmp_path, baseline_provider=baseline_provider, agentic_provider=agentic_provider))
-    conversation_id = client.post("/api/conversations", json={"collection": "rules"}).json()["id"]
+    conversation_id = client.post("/api/conversations", json={"collection": "docs"}).json()["id"]
     client.post(f"/api/conversations/{conversation_id}/turns", json={"question": "Q?"})
 
     first = client.post(f"/api/conversations/{conversation_id}/turns/0/escalate")
@@ -105,7 +116,7 @@ def test_escalation_is_cached_after_first_call(tmp_path):
 
 def test_escalating_unknown_turn_is_404(tmp_path):
     client = TestClient(make_app(tmp_path))
-    conversation_id = client.post("/api/conversations", json={"collection": "rules"}).json()["id"]
+    conversation_id = client.post("/api/conversations", json={"collection": "docs"}).json()["id"]
 
     response = client.post(f"/api/conversations/{conversation_id}/turns/0/escalate")
 

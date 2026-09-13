@@ -1,6 +1,8 @@
-"""Index-write safety: eval-corpus documents survive an upload rebuild
-byte-for-byte, and a broken invariant restores the prior index rather than
-leaving a partial write in place."""
+"""Index-write safety: a rebuild covers only documents already in the
+manifest plus what's explicitly being added or removed -- never a directory
+scan -- and every document not touched this call survives byte-for-byte. A
+broken invariant restores the prior index rather than leaving a partial
+write in place."""
 
 from __future__ import annotations
 
@@ -8,7 +10,13 @@ from pathlib import Path
 
 import numpy as np
 
-from raglab.api.indexing import IndexInvarianceError, load_all_documents, rebuild_index
+from raglab.api.indexing import (
+    IndexInvarianceError,
+    documents_in_manifest,
+    rebuild_index,
+    resolve_document,
+)
+from raglab.corpus import load_document
 from raglab.index.builder import IndexBuilder
 from raglab.index.store import NumpyStore
 
@@ -30,7 +38,7 @@ def _write(path: Path, text: str) -> None:
 
 def _setup(tmp_path: Path) -> tuple[Path, Path, NumpyStore, IndexBuilder]:
     corpus_dir = tmp_path / "corpus"
-    uploads_dir = tmp_path / "docs"
+    uploads_dir = tmp_path / "library"
     corpus_dir.mkdir()
     _write(corpus_dir / "eval.md", "Eval corpus content. " * 50)
 
@@ -39,45 +47,119 @@ def _setup(tmp_path: Path) -> tuple[Path, Path, NumpyStore, IndexBuilder]:
     return corpus_dir, uploads_dir, store, builder
 
 
-def test_load_all_documents_merges_corpus_and_uploads(tmp_path):
+def test_resolve_document_prefers_uploads_dir(tmp_path):
     corpus_dir, uploads_dir, _, _ = _setup(tmp_path)
     _write(uploads_dir / "uploaded.md", "Uploaded content.")
 
-    documents = load_all_documents(corpus_dir, uploads_dir)
+    from_uploads = resolve_document("uploaded.md", corpus_dir, uploads_dir)
+    from_corpus = resolve_document("eval.md", corpus_dir, uploads_dir)
 
-    assert set(documents) == {"eval.md", "uploaded.md"}
+    assert from_uploads.path == uploads_dir / "uploaded.md"
+    assert from_corpus.path == corpus_dir / "eval.md"
 
 
-def test_rebuild_indexes_uploaded_doc_without_touching_eval_doc(tmp_path):
+def test_fresh_install_first_upload_indexes_only_that_document(tmp_path):
+    # The fixture sits on disk unindexed -- a build with nothing in the
+    # manifest yet and one document being added must not sweep it in
+    # (spec: "what gets indexed is defined by the manifest, not disk").
     corpus_dir, uploads_dir, store, builder = _setup(tmp_path)
-    eval_names = frozenset(["eval.md"])
-    rebuild_index(store, builder, index_dir=store.index_dir, corpus_dir=corpus_dir, uploads_dir=uploads_dir, collections={}, eval_doc_names=eval_names)
-    before = store.load_manifest().documents["eval.md"]
+    _write(uploads_dir / "first.txt", "the first document in a fresh install")
+    assert not store.exists()
 
-    _write(uploads_dir / "uploaded.md", "Freshly uploaded content, quite a bit longer than before.")
-    rebuild_index(store, builder, index_dir=store.index_dir, corpus_dir=corpus_dir, uploads_dir=uploads_dir, collections={}, eval_doc_names=eval_names)
+    results = rebuild_index(
+        store, builder, index_dir=store.index_dir, corpus_dir=corpus_dir, uploads_dir=uploads_dir,
+        collections={}, adding={"first.txt": load_document(uploads_dir / "first.txt")},
+    )
+
+    assert {r.doc for r in results} == {"first.txt"}
+    assert set(store.load_manifest().documents) == {"first.txt"}
+
+
+def test_second_upload_keeps_first_untouched(tmp_path):
+    corpus_dir, uploads_dir, store, builder = _setup(tmp_path)
+    _write(uploads_dir / "a.txt", "document a, uploaded first")
+    rebuild_index(
+        store, builder, index_dir=store.index_dir, corpus_dir=corpus_dir, uploads_dir=uploads_dir,
+        collections={}, adding={"a.txt": load_document(uploads_dir / "a.txt")},
+    )
+    before = store.load_manifest().documents["a.txt"]
+
+    _write(uploads_dir / "b.txt", "document b, uploaded second, quite a bit longer")
+    rebuild_index(
+        store, builder, index_dir=store.index_dir, corpus_dir=corpus_dir, uploads_dir=uploads_dir,
+        collections={}, adding={"b.txt": load_document(uploads_dir / "b.txt")},
+    )
 
     after = store.load_manifest()
-    assert "uploaded.md" in after.documents
-    assert after.documents["eval.md"] == before
+    assert set(after.documents) == {"a.txt", "b.txt"}
+    assert after.documents["a.txt"] == before
+
+
+def test_removing_drops_a_document_without_touching_the_other(tmp_path):
+    corpus_dir, uploads_dir, store, builder = _setup(tmp_path)
+    _write(uploads_dir / "a.txt", "document a")
+    _write(uploads_dir / "b.txt", "document b, kept")
+    rebuild_index(
+        store, builder, index_dir=store.index_dir, corpus_dir=corpus_dir, uploads_dir=uploads_dir, collections={},
+        adding={
+            "a.txt": load_document(uploads_dir / "a.txt"),
+            "b.txt": load_document(uploads_dir / "b.txt"),
+        },
+    )
+    before = store.load_manifest().documents["b.txt"]
+
+    rebuild_index(
+        store, builder, index_dir=store.index_dir, corpus_dir=corpus_dir, uploads_dir=uploads_dir,
+        collections={}, removing=frozenset(["a.txt"]),
+    )
+
+    after = store.load_manifest()
+    assert set(after.documents) == {"b.txt"}
+    assert after.documents["b.txt"] == before
+
+
+def test_indexing_the_fixture_later_leaves_prior_uploads_untouched(tmp_path):
+    # A developer runs `raglab index` (unaffected by this module) after a
+    # cloner has already uploaded something -- adding the fixture through
+    # this same mechanism must not disturb what's already indexed.
+    corpus_dir, uploads_dir, store, builder = _setup(tmp_path)
+    _write(uploads_dir / "mine.txt", "a document uploaded before the fixture existed")
+    rebuild_index(
+        store, builder, index_dir=store.index_dir, corpus_dir=corpus_dir, uploads_dir=uploads_dir,
+        collections={}, adding={"mine.txt": load_document(uploads_dir / "mine.txt")},
+    )
+    before = store.load_manifest().documents["mine.txt"]
+
+    rebuild_index(
+        store, builder, index_dir=store.index_dir, corpus_dir=corpus_dir, uploads_dir=uploads_dir,
+        collections={}, adding={"eval.md": load_document(corpus_dir / "eval.md")},
+    )
+
+    after = store.load_manifest()
+    assert set(after.documents) == {"mine.txt", "eval.md"}
+    assert after.documents["mine.txt"] == before
 
 
 def test_broken_invariant_restores_prior_index(tmp_path):
+    # Simulates a document that was already indexed being silently modified
+    # on disk between two calls, without being named in adding/removing --
+    # exactly the identity change the invariant exists to catch.
     corpus_dir, uploads_dir, store, builder = _setup(tmp_path)
-    eval_names = frozenset(["eval.md"])
-    rebuild_index(store, builder, index_dir=store.index_dir, corpus_dir=corpus_dir, uploads_dir=uploads_dir, collections={}, eval_doc_names=eval_names)
+    rebuild_index(
+        store, builder, index_dir=store.index_dir, corpus_dir=corpus_dir, uploads_dir=uploads_dir,
+        collections={}, adding={"eval.md": load_document(corpus_dir / "eval.md")},
+    )
     prior_manifest = store.load_manifest()
     prior_chunks = store.load_chunks()
 
-    # Simulate an orchestration bug: the eval doc vanishes from corpus_dir
-    # between builds, so the rebuild would silently drop it from the index.
-    # eval_names is captured once at startup (like AppState.eval_doc_names),
-    # so it still names "eval.md" even though corpus_dir no longer does --
-    # that's exactly what makes the check able to catch this.
-    (corpus_dir / "eval.md").unlink()
+    _write(corpus_dir / "eval.md", "Completely different content that changes the hash and chunk count.")
+    _write(uploads_dir / "unrelated.txt", "a document that has nothing to do with eval.md")
 
     try:
-        rebuild_index(store, builder, index_dir=store.index_dir, corpus_dir=corpus_dir, uploads_dir=uploads_dir, collections={}, eval_doc_names=eval_names)
+        rebuild_index(
+            store, builder, index_dir=store.index_dir, corpus_dir=corpus_dir, uploads_dir=uploads_dir,
+            collections={}, adding={"unrelated.txt": load_document(uploads_dir / "unrelated.txt")},
+        )
         assert False, "expected IndexInvarianceError"
     except IndexInvarianceError as exc:
         assert exc.doc == "eval.md"
@@ -87,13 +169,24 @@ def test_broken_invariant_restores_prior_index(tmp_path):
     assert store.load_chunks() == prior_chunks
 
 
-def test_first_build_has_nothing_to_verify_against(tmp_path):
-    corpus_dir, uploads_dir, store, builder = _setup(tmp_path)
+def test_documents_in_manifest_empty_when_no_index(tmp_path):
+    corpus_dir, uploads_dir, store, _builder = _setup(tmp_path)
     assert not store.exists()
 
-    results = rebuild_index(
+    assert documents_in_manifest(store, corpus_dir, uploads_dir) == {}
+
+
+def test_documents_in_manifest_resolves_from_either_directory(tmp_path):
+    corpus_dir, uploads_dir, store, builder = _setup(tmp_path)
+    _write(uploads_dir / "mine.txt", "an uploaded document")
+    rebuild_index(
         store, builder, index_dir=store.index_dir, corpus_dir=corpus_dir, uploads_dir=uploads_dir, collections={},
-        eval_doc_names=frozenset(["eval.md"]),
+        adding={
+            "eval.md": load_document(corpus_dir / "eval.md"),
+            "mine.txt": load_document(uploads_dir / "mine.txt"),
+        },
     )
 
-    assert {r.doc for r in results} == {"eval.md"}
+    documents = documents_in_manifest(store, corpus_dir, uploads_dir)
+
+    assert set(documents) == {"eval.md", "mine.txt"}

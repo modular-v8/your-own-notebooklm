@@ -1,17 +1,21 @@
 """Collection membership: which documents belong to which named collections.
 
-Membership for the collections named in `config.toml` ("locked" collections)
-is resolved once at index time (chunk-level `collections` field) and again
-whenever a search or eval run names the collection it's scoped to. Retrieval
-still never filters to a single document (Phase 1 decision, carried
-forward) -- a collection is the coarser unit Phase 3 introduced instead.
+Membership for the collections named in `config.toml` ("reserved" names,
+kept for the CLI eval harness) is resolved once at index time (chunk-level
+`collections` field) and again whenever a search or eval run names the
+collection it's scoped to. Retrieval still never filters to a single
+document (Phase 1 decision, carried forward) -- a collection is the coarser
+unit Phase 3 introduced instead.
 
 Phase 8 adds a second, writable source: `collections.json`, holding
 user-created collections the app can create, rename, delete, and edit the
-membership of. `CollectionRegistry` merges the two into the same
-`dict[str, list[str]]` shape every existing caller (`require_collection`,
-the retriever, the eval runner) already consumes, so none of them change --
-only the API layer needs to know which names are locked.
+membership of. Phase 8's amendment (2026-09-13) hides `config.toml`'s
+collections from the application entirely -- a person using the web app has
+no reason to see this project's test fixtures. `CollectionRegistry` exposes
+three views over the same data: `all()` (merged, unchanged shape, for the
+CLI and for tagging chunks at build time), `user()` (editable only -- every
+API route uses this and only this), and `reserved()` (the names `create`
+alone needs to reject, without saying why).
 """
 
 from __future__ import annotations
@@ -31,20 +35,10 @@ class UnknownCollectionError(Exception):
         super().__init__(f"collection {name!r} not found in config.toml (known: {known})")
 
 
-class LockedCollectionError(Exception):
-    """Raised whenever a mutation targets a collection defined in
-    config.toml. Enforced here, not in the UI -- anything reachable by curl
-    is reachable by accident (spec: users & context)."""
-
-    def __init__(self, name: str, action: str):
-        self.name = name
-        self.action = action
-        super().__init__(f"collection {name!r} is locked (defined in config.toml) and cannot be {action}")
-
-
 class CollectionNameConflictError(Exception):
-    """Raised when a create/rename would collide with an existing name,
-    locked or editable -- both namespaces share one flat name-space."""
+    """Raised when a create would collide with an existing name, editable or
+    reserved -- the message never says which, so a reserved name isn't
+    distinguishable from an ordinary conflict (spec: doesn't reveal why)."""
 
     def __init__(self, name: str):
         self.name = name
@@ -52,6 +46,10 @@ class CollectionNameConflictError(Exception):
 
 
 class CollectionNotFoundError(Exception):
+    """Raised for any mutation targeting a name absent from `user()` --
+    including a `config.toml` name, which must be indistinguishable from one
+    that never existed at all (spec: refused identically to nonexistent)."""
+
     def __init__(self, name: str):
         self.name = name
         super().__init__(f"collection {name!r} not found")
@@ -101,46 +99,41 @@ class UserCollectionStore:
 
 
 class CollectionRegistry:
-    """Merges `config.toml`'s locked collections with `collections.json`'s
-    editable ones. The two never mix on disk (spec: data & integrations) --
-    a locked name is simply never writable, checked before every mutation
-    below rather than trusted to a caller."""
+    """Merges `config.toml`'s reserved collections with `collections.json`'s
+    editable ones. The two never mix on disk (spec: data & integrations).
+    No API route ever calls `all()` -- a request naming a reserved
+    collection finds nothing in `user()` and is refused exactly as a
+    nonexistent one would be, with no special case needed."""
 
     def __init__(self, locked: dict[str, list[str]], store: UserCollectionStore):
-        self._locked = {name: list(docs) for name, docs in locked.items()}
+        self._reserved = {name: list(docs) for name, docs in locked.items()}
         self._store = store
 
-    @property
-    def locked_names(self) -> set[str]:
-        return set(self._locked)
+    def reserved(self) -> set[str]:
+        return set(self._reserved)
 
     def all(self) -> dict[str, list[str]]:
-        """Merged view in the exact shape every pre-Phase-8 caller expects."""
-        merged = dict(self._locked)
+        """Merged view in the exact shape the CLI eval harness and build-time
+        chunk tagging expect. Never used by an API route."""
+        merged = dict(self._reserved)
         merged.update(self._store.load())
         return merged
 
-    def list_summary(self) -> list[dict]:
-        merged_editable = self._store.load()
-        summary = [
-            {"name": name, "locked": True, "document_count": len(docs)} for name, docs in self._locked.items()
-        ]
-        summary.extend(
-            {"name": name, "locked": False, "document_count": len(docs)}
-            for name, docs in merged_editable.items()
-        )
-        return summary
-
-    def collections_for(self, doc: str) -> list[str]:
-        return collections_for_doc(doc, self.all())
-
-    def _require_unlocked(self, name: str, action: str) -> dict[str, list[str]]:
-        if name in self._locked:
-            raise LockedCollectionError(name, action)
+    def user(self) -> dict[str, list[str]]:
+        """Editable collections only -- every API route reads and writes
+        through this view, never `all()`."""
         return self._store.load()
 
+    def list_summary(self) -> list[dict]:
+        return [{"name": name, "document_count": len(docs)} for name, docs in self.user().items()]
+
+    def collections_for(self, doc: str) -> list[str]:
+        """A document's *user*-visible collections only -- an eval-corpus
+        document reported here would leak a fixture the app never lists."""
+        return collections_for_doc(doc, self.user())
+
     def create(self, name: str, docs: list[str] | None = None) -> None:
-        if name in self._locked:
+        if name in self._reserved:
             raise CollectionNameConflictError(name)
         editable = self._store.load()
         if name in editable:
@@ -149,23 +142,23 @@ class CollectionRegistry:
         self._store.save(editable)
 
     def rename(self, name: str, new_name: str) -> None:
-        editable = self._require_unlocked(name, "renamed")
+        editable = self._store.load()
         if name not in editable:
             raise CollectionNotFoundError(name)
-        if new_name in self._locked or new_name in editable:
+        if new_name in self._reserved or new_name in editable:
             raise CollectionNameConflictError(new_name)
         editable[new_name] = editable.pop(name)
         self._store.save(editable)
 
     def delete(self, name: str) -> None:
-        editable = self._require_unlocked(name, "deleted")
+        editable = self._store.load()
         if name not in editable:
             raise CollectionNotFoundError(name)
         del editable[name]
         self._store.save(editable)
 
     def add_document(self, name: str, doc: str) -> None:
-        editable = self._require_unlocked(name, "modified")
+        editable = self._store.load()
         if name not in editable:
             raise CollectionNotFoundError(name)
         if doc not in editable[name]:
@@ -173,7 +166,7 @@ class CollectionRegistry:
             self._store.save(editable)
 
     def remove_document(self, name: str, doc: str) -> None:
-        editable = self._require_unlocked(name, "modified")
+        editable = self._store.load()
         if name not in editable:
             raise CollectionNotFoundError(name)
         if doc in editable[name]:
@@ -182,7 +175,7 @@ class CollectionRegistry:
 
     def remove_document_everywhere(self, doc: str) -> None:
         """Used only when a document is deleted from disk -- membership in
-        every *editable* collection is dropped; locked collections cannot
+        every *editable* collection is dropped; a reserved collection cannot
         reference an uploaded document in the first place."""
         editable = self._store.load()
         changed = False

@@ -361,7 +361,7 @@ def serve(
     corpus_dir: Path = typer.Option(DEFAULT_CORPUS_DIR, "--corpus-dir"),
     index_dir: Path = typer.Option(DEFAULT_FIXED_INDEX_DIR, "--index-dir"),
     conversations_dir: Path = typer.Option(DEFAULT_CONVERSATIONS_DIR, "--conversations-dir"),
-    uploads_dir: Path = typer.Option(Path("docs"), "--uploads-dir", help="Where uploaded documents are stored"),
+    uploads_dir: Path = typer.Option(Path("library"), "--uploads-dir", help="Where uploaded documents are stored"),
     collections_path: Path = typer.Option(
         Path("collections.json"), "--collections-path", help="Writable user-collections file"
     ),

@@ -13,7 +13,8 @@ import asyncio
 import httpx
 import pytest
 
-from tests.conftest import make_app
+from raglab.api.app import build_app
+from tests.conftest import make_app, make_state
 
 
 async def _poll_job(client: httpx.AsyncClient, job_id: str, *, timeout_s: float = 5.0) -> dict:
@@ -47,6 +48,28 @@ def _minimal_pdf_bytes() -> bytes:
     page = doc.new_page()
     page.insert_text((72, 72), "Smoke-test PDF content about widgets.")
     return doc.tobytes()
+
+
+async def test_fresh_clone_first_upload_creates_index_with_only_that_document(tmp_path):
+    # No index exists at all before this call -- create_app() must not
+    # require one (spec amendment: "a fresh clone starts empty and works").
+    state = make_state(tmp_path, collections={"rules": ["a.md"]})
+    assert not state.store.exists()
+    # The fixture sits on disk, unindexed -- the manifest must not sweep
+    # it in just because it's present (spec: "what gets indexed is defined
+    # by the manifest, not by what sits on disk").
+    (state.corpus_dir / "a.md").write_text("eval corpus content, quite a bit of it here", encoding="utf-8")
+
+    async with _async_client(build_app(state)) as client:
+        await client.post("/api/collections", json={"name": "notes"})
+        upload = await client.post(
+            "/api/collections/notes/documents",
+            files={"file": ("first.txt", b"the very first document in a fresh install", "text/plain")},
+        )
+        await _poll_job(client, upload.json()["job_id"])
+
+    manifest = state.store.load_manifest()
+    assert set(manifest.documents) == {"first.txt"}
 
 
 async def test_upload_md_indexes_and_becomes_ready(client):
@@ -95,7 +118,6 @@ async def test_upload_txt_indexes_and_becomes_ready(client):
     entry = next(d for d in docs if d["name"] == "notes.txt")
     assert entry["state"] == "ready"
     assert entry["collections"] == ["notes"]
-    assert entry["locked"] is False
 
 
 async def test_upload_unsupported_extension_is_rejected_by_name(client):
@@ -128,13 +150,15 @@ async def test_upload_duplicate_filename_is_rejected(client):
     assert "dup.txt" in second.json()["detail"]
 
 
-async def test_upload_to_locked_collection_is_refused(client):
+async def test_upload_to_reserved_collection_is_refused_identically_to_unknown(client):
+    # "rules" is reserved (make_app's default collections= kwarg) -- refused
+    # exactly like a name that was never registered at all (spec amendment).
     response = await client.post(
         "/api/collections/rules/documents",
-        files={"file": ("locked-target.txt", b"content", "text/plain")},
+        files={"file": ("reserved-target.txt", b"content", "text/plain")},
     )
 
-    assert response.status_code == 403
+    assert response.status_code == 404
 
 
 async def test_upload_to_unknown_collection_is_404(client):
@@ -189,9 +213,14 @@ async def test_delete_from_disk_warns_then_deletes_with_confirm(client):
     assert all(d["name"] != "to-delete.txt" for d in docs)
 
 
-async def test_delete_eval_corpus_document_is_refused(tmp_path):
-    app = make_app(tmp_path, collections={"rules": ["a.md"]}, eval_doc_names=frozenset(["a.md"]))
-    async with _async_client(app) as client:
+async def test_delete_eval_corpus_document_is_404_not_403(tmp_path):
+    # Scoped to uploads_dir only -- a doc that lives in corpus_dir (or
+    # nowhere at all) reads identically as "not found", never revealing
+    # which (spec amendment: the fixture is never surfaced by the app).
+    state = make_state(tmp_path, collections={"rules": ["a.md"]})
+    (state.corpus_dir / "a.md").write_text("eval corpus content", encoding="utf-8")
+
+    async with _async_client(build_app(state)) as client:
         response = await client.delete("/api/documents/a.md", params={"confirm": "true"})
 
-    assert response.status_code == 403
+    assert response.status_code == 404

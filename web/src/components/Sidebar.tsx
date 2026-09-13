@@ -100,7 +100,6 @@ export function Sidebar({ selectedCollection, onSelectCollection }: Props) {
   const documentsInSelected = selectedCollection
     ? documents.filter((d) => d.collections.includes(selectedCollection))
     : [];
-  const selectedIsLocked = collections.find((c) => c.name === selectedCollection)?.locked ?? false;
 
   return (
     <div className="sidebar">
@@ -111,6 +110,9 @@ export function Sidebar({ selectedCollection, onSelectCollection }: Props) {
         </button>
       </div>
 
+      {collections.length === 0 && (
+        <div className="sidebar-empty">No collections yet -- create one to get started.</div>
+      )}
       <CollectionList
         collections={collections}
         selected={selectedCollection}
@@ -128,7 +130,7 @@ export function Sidebar({ selectedCollection, onSelectCollection }: Props) {
             onRemove={handleRemoveDocument}
             onDelete={handleDeleteDocument}
           />
-          {!selectedIsLocked && <UploadControl collection={selectedCollection} onUploaded={refresh} />}
+          <UploadControl collection={selectedCollection} onUploaded={refresh} />
         </div>
       )}
 

@@ -49,11 +49,10 @@ export function CollectionList({ collections, selected, onSelect, onCreate, onRe
           ) : (
             <button className="collection-name" onClick={() => onSelect(c.name)}>
               <span>{c.name}</span>
-              {c.locked && <span className="locked-badge">Locked</span>}
             </button>
           )}
           <span className="collection-count">{c.document_count}</span>
-          {!c.locked && renamingName !== c.name && (
+          {renamingName !== c.name && (
             <div className="collection-actions">
               <button
                 className="icon-button"

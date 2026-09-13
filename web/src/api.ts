@@ -3,13 +3,12 @@
 // turn endpoint (EventSource itself can't POST, so this reads the raw
 // text/event-stream body by hand).
 
-export type Collection = { name: string; locked: boolean; document_count: number };
+export type Collection = { name: string; document_count: number };
 
 export type DocumentState = "ready" | "reindexing" | "indexing" | "failed";
 
 export type DocumentEntry = {
   name: string;
-  locked: boolean;
   collections: string[];
   state: DocumentState;
   chunk_count: number | null;

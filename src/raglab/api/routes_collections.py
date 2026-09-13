@@ -1,17 +1,17 @@
-"""Collection CRUD. Locked collections (defined in config.toml) are refused
-here, at the API, never merely hidden by the UI (spec: "a UI that merely
-hides a button is not protection")."""
+"""Collection CRUD. `config.toml`'s collections never reach here -- every
+route reads and writes through `CollectionRegistry.user()` only, so a
+request naming one is refused exactly like a nonexistent collection (spec
+amendment: "a person using the web app never learns they exist"). `create`
+is the one exception, needing a distinct rejection for a reserved name --
+enforced here, at the API, never merely hidden by the UI (spec: "a UI that
+merely omits something is not protection")."""
 
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
-from ..collections import (
-    CollectionNameConflictError,
-    CollectionNotFoundError,
-    LockedCollectionError,
-)
+from ..collections import CollectionNameConflictError, CollectionNotFoundError
 
 router = APIRouter()
 
@@ -37,7 +37,7 @@ async def create_collection(body: CreateCollectionRequest, request: Request) -> 
         state.collections.create(body.name)
     except CollectionNameConflictError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
-    return {"name": body.name, "locked": False, "document_count": 0}
+    return {"name": body.name, "document_count": 0}
 
 
 @router.patch("/api/collections/{name}")
@@ -45,8 +45,6 @@ async def rename_collection(name: str, body: RenameCollectionRequest, request: R
     state = request.app.state.raglab
     try:
         state.collections.rename(name, body.name)
-    except LockedCollectionError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
     except CollectionNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except CollectionNameConflictError as exc:
@@ -59,7 +57,5 @@ async def delete_collection(name: str, request: Request) -> None:
     state = request.app.state.raglab
     try:
         state.collections.delete(name)
-    except LockedCollectionError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
     except CollectionNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc

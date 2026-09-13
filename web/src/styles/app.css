@@ -109,15 +109,11 @@ button {
   font-weight: 700;
 }
 
-.locked-badge {
-  font-size: var(--font-label-size);
-  font-weight: var(--font-label-weight);
-  letter-spacing: var(--font-label-tracking);
-  text-transform: uppercase;
+.sidebar-empty {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 0.85rem;
   color: var(--color-secondary);
-  border: 1px solid rgba(138, 133, 122, 0.4);
-  border-radius: var(--rounded-sm);
-  padding: 1px 6px;
+  font-style: italic;
 }
 
 .collection-count {

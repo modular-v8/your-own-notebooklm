@@ -55,7 +55,7 @@ def _load_conversation(request: Request, conversation_id: str) -> ConversationRe
 @router.post("/api/conversations")
 async def create_conversation(body: CreateConversationRequest, request: Request) -> ConversationRecord:
     state = request.app.state.raglab
-    known = state.collections.all()
+    known = state.collections.user()
     if body.collection not in known:
         raise HTTPException(
             status_code=400,

@@ -1,13 +1,19 @@
-"""Index-write safety net (plan.md): rebuild the shared index over every
-eval-corpus and uploaded document, verify no `evals/corpus/` document's
-identity moved, and restore the previous index if it did.
+"""Index-write safety net: rebuild the shared index over exactly the
+documents already in the manifest plus whatever is explicitly being added
+or removed -- never a directory scan -- and verify every document not
+being touched keeps its identity, restoring the previous index if it
+didn't.
 
-The spec's central guarantee -- `evals/corpus/` must stay byte-for-byte
-reproducible -- made mechanical on every write this module performs, not
-just checked in a test. `IndexBuilder`'s own incremental rebuild already
-means an unchanged document's chunk ids and hash cannot move on their own;
-this exists to catch an orchestration bug here (e.g. an eval document
-dropped from the `documents` dict by mistake) before it reaches disk.
+This is the mechanic that makes the eval-corpus fixture optional (spec
+amendment, 2026-09-13): "what gets indexed is defined by the manifest, not
+by what sits on disk." A fresh clone's empty manifest plus one upload
+builds an index of exactly that one document; `evals/corpus/` sits on disk
+unindexed until something explicitly adds it (`raglab index`, unchanged).
+
+The invariant generalises the original's eval-corpus-only check ("every
+`evals/corpus/` document is unchanged," vacuous when none are indexed) to
+"every document not being changed is unchanged" -- correct whether or not
+the fixture is part of this call.
 """
 
 from __future__ import annotations
@@ -18,37 +24,37 @@ import uuid
 from pathlib import Path
 
 from ..collections import collections_for_doc
-from ..corpus import Document, load_corpus
+from ..corpus import Document, load_document
 from ..index.builder import DocIndexResult, IndexBuilder
 from ..index.store import IndexManifest, VectorStore
 
 
 class IndexInvarianceError(RuntimeError):
-    """Raised when a rebuild would change an eval-corpus document's
-    identity -- the write is rolled back rather than left in place
-    (spec: unwanted behavior, "abort rather than write")."""
+    """Raised when a rebuild would change the identity of a document that
+    wasn't part of this call's add/remove request -- the write is rolled
+    back rather than left in place (spec: unwanted behavior, "abort rather
+    than write")."""
 
     def __init__(self, doc: str, reason: str):
         self.doc = doc
         self.reason = reason
-        super().__init__(f"index rebuild would change eval corpus document {doc!r}: {reason}")
+        super().__init__(f"index rebuild would change untouched document {doc!r}: {reason}")
 
 
-def load_all_documents(corpus_dir: Path, uploads_dir: Path) -> dict[str, Document]:
-    """The eval corpus and uploaded documents as one combined set -- "one
-    index, shared" (spec: data & integrations). Upload-time name-collision
-    checks already guarantee the two never name the same document."""
-    documents = load_corpus(corpus_dir)
-    if uploads_dir.exists():
-        documents.update(load_corpus(uploads_dir))
-    return documents
+def resolve_document(name: str, corpus_dir: Path, uploads_dir: Path) -> Document:
+    """Load one already-known document by name from whichever directory it
+    actually lives in. Upload-time collision checks guarantee a name never
+    exists in both, so checking `uploads_dir` first is unambiguous, not a
+    priority order."""
+    upload_path = uploads_dir / name
+    if upload_path.exists():
+        return load_document(upload_path)
+    return load_document(corpus_dir / name)
 
 
-def _verify_invariant(eval_doc_names: set[str], before: IndexManifest, after: IndexManifest) -> None:
-    for name in eval_doc_names:
-        prior = before.documents.get(name)
-        if prior is None:
-            continue  # wasn't indexed before this write either -- nothing to protect
+def _verify_invariant(protected_names: set[str], before: IndexManifest, after: IndexManifest) -> None:
+    for name in protected_names:
+        prior = before.documents[name]
         current = after.documents.get(name)
         if current is None:
             raise IndexInvarianceError(name, "dropped from the index")
@@ -77,23 +83,30 @@ def rebuild_index(
     corpus_dir: Path,
     uploads_dir: Path,
     collections: dict[str, list[str]],
-    eval_doc_names: frozenset[str],
+    adding: dict[str, Document] | None = None,
+    removing: frozenset[str] = frozenset(),
 ) -> list[DocIndexResult]:
-    """`eval_doc_names` is the eval corpus's file list as captured once at
-    server startup (`AppState.eval_doc_names`), not re-scanned from
-    `corpus_dir` here -- the exact failure mode this guards against (an eval
-    document going missing from disk between requests) would otherwise
-    silently shrink the set it's being checked against, defeating the check."""
-    documents = load_all_documents(corpus_dir, uploads_dir)
-
+    """`collections` should be the *merged* view (`CollectionRegistry.all()`)
+    -- this is build-time chunk tagging, not an API-visibility decision, and
+    a document already in the manifest may be a reserved-collection member
+    whose tagging must stay correct for `raglab eval run`."""
+    adding = adding or {}
     had_existing = store.exists()
     before = store.load_manifest() if had_existing else None
-    snapshot_dir = _snapshot(index_dir) if had_existing else None
+    existing_names = set(before.documents) if before is not None else set()
 
+    target_names = (existing_names | set(adding)) - removing
+    documents = {
+        name: adding[name] if name in adding else resolve_document(name, corpus_dir, uploads_dir)
+        for name in target_names
+    }
+    protected_names = existing_names - removing - set(adding)
+
+    snapshot_dir = _snapshot(index_dir) if had_existing else None
     try:
         results = builder.build(documents, collections)
         if before is not None:
-            _verify_invariant(eval_doc_names, before, store.load_manifest())
+            _verify_invariant(protected_names, before, store.load_manifest())
         return results
     except IndexInvarianceError:
         if snapshot_dir is not None:
@@ -104,11 +117,22 @@ def rebuild_index(
             shutil.rmtree(snapshot_dir, ignore_errors=True)
 
 
+def documents_in_manifest(store: VectorStore, corpus_dir: Path, uploads_dir: Path) -> dict[str, Document]:
+    """Every currently-indexed document, resolved back to a `Document` for
+    text extraction (citation source panels) -- reads the manifest, never
+    the directories, matching `rebuild_index`'s own scoping rule."""
+    if not store.exists():
+        return {}
+    manifest = store.load_manifest()
+    return {name: resolve_document(name, corpus_dir, uploads_dir) for name in manifest.documents}
+
+
 def update_document_collections(store: VectorStore, doc: str, collections: dict[str, list[str]]) -> None:
     """Membership-only rewrite (plan.md): refresh one document's chunks'
     `collections` field without re-embedding. Chunk ids, text, and vectors
     are untouched, so this cannot move any document's identity -- no
-    snapshot/verify needed, unlike `rebuild_index`."""
+    snapshot/verify needed, unlike `rebuild_index`. `collections` should be
+    the merged view, same reasoning as `rebuild_index`."""
     manifest = store.load_manifest()
     chunks = store.load_chunks()
     vectors = store.load_vectors()

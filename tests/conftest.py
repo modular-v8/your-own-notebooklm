@@ -67,13 +67,16 @@ def default_retriever() -> StubRetriever:
     )
 
 
-def make_config(collections: dict[str, list[str]] | None = None) -> RagLabConfig:
+DEFAULT_USER_COLLECTION = "docs"
+
+
+def make_config(reserved_collections: dict[str, list[str]] | None = None) -> RagLabConfig:
     return RagLabConfig(
         answer=RoleConfig(provider="agent_sdk", model="fake"),
         judge=RoleConfig(provider="agent_sdk", model="fake"),
         concurrency=1,
         retrieval=RetrievalConfig(top_k=5, score_threshold=0.35),
-        collections=collections if collections is not None else {"rules": [DOC_NAME]},
+        collections=reserved_collections if reserved_collections is not None else {},
     )
 
 
@@ -84,32 +87,41 @@ def make_state(
     agentic_provider: FakeProvider | None = None,
     retriever: StubRetriever | None = None,
     collections: dict[str, list[str]] | None = None,
-    eval_doc_names: frozenset[str] | None = None,
+    user_collections: dict[str, list[str]] | None = None,
 ) -> AppState:
+    """`collections` seeds config.toml's *reserved* set (empty by default --
+    most tests don't exercise reserved-name behaviour). `user_collections`
+    seeds `collections.json`, the editable set every API route actually
+    reads -- defaults to one working collection (`docs`, holding `DOC_NAME`)
+    so conversation/chunk tests keep a collection to point at without caring
+    about the reserved-name mechanism."""
     baseline_provider = baseline_provider or FakeProvider([])
     retriever = retriever or default_retriever()
-    locked_collections = collections if collections is not None else {"rules": [DOC_NAME]}
+    reserved_collections = collections if collections is not None else {}
+    editable_collections = user_collections if user_collections is not None else {DEFAULT_USER_COLLECTION: [DOC_NAME]}
 
     corpus_dir = tmp_path / "corpus"
     uploads_dir = tmp_path / "docs"
     corpus_dir.mkdir(parents=True, exist_ok=True)
     uploads_dir.mkdir(parents=True, exist_ok=True)
 
+    user_store = UserCollectionStore(tmp_path / "collections.json")
+    user_store.save(editable_collections)
+
     return AppState(
-        config=make_config(collections),
+        config=make_config(reserved_collections),
         conversation_store=ConversationStore(tmp_path / "conversations"),
         baseline_pipeline=RetrievalPipeline(baseline_provider, retriever, top_k=5, score_threshold=0.35),
         agentic_pipeline=AgenticPipeline(agentic_provider or baseline_provider, retriever, top_k=5, max_calls=5),
         chunks_by_id={CHUNK_ID: STORED_CHUNK},
         doc_texts={DOC_NAME: DOC_TEXT},
-        collections=CollectionRegistry(locked_collections, UserCollectionStore(tmp_path / "collections.json")),
+        collections=CollectionRegistry(reserved_collections, user_store),
         store=NumpyStore(tmp_path / "index"),
         embedder=_FakeEmbedder(),
         chunking=ChunkerSettings(strategy="fixed", size=900, overlap=150),
         corpus_dir=corpus_dir,
         uploads_dir=uploads_dir,
         index_dir=tmp_path / "index",
-        eval_doc_names=eval_doc_names if eval_doc_names is not None else frozenset(),
         jobs=JobTable(),
     )
 
