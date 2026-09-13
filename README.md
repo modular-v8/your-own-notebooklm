@@ -60,7 +60,7 @@ uv run raglab eval run --gold evals/gold/<name>.yaml --name run --pipeline retri
 uv run raglab eval run --gold evals/gold/<name>.yaml --name run --pipeline retrieval --experiment hybrid-v1
 uv run raglab compare evals/baselines/<baseline-report>.json evals/runs/<run-report>.json
 
-# Serve the browser interface (needs the frontend built once, see Setup)
+# Serve the browser interface
 uv run raglab serve
 ```
 

@@ -55,10 +55,11 @@ def _load_conversation(request: Request, conversation_id: str) -> ConversationRe
 @router.post("/api/conversations")
 async def create_conversation(body: CreateConversationRequest, request: Request) -> ConversationRecord:
     state = request.app.state.raglab
-    if body.collection not in state.config.collections:
+    known = state.collections.all()
+    if body.collection not in known:
         raise HTTPException(
             status_code=400,
-            detail=f"unknown collection {body.collection!r}; known: {sorted(state.config.collections)}",
+            detail=f"unknown collection {body.collection!r}; known: {sorted(known)}",
         )
     return state.conversation_store.create(body.collection)
 

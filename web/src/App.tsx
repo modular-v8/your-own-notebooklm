@@ -1,21 +1,18 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   type ChunkDetail,
-  type Collection,
   type Conversation as ConversationData,
   createConversation,
   escalateTurn,
   fetchChunk,
-  fetchCollections,
   getConversation,
   streamTurn,
 } from "./api";
-import { CollectionPicker } from "./components/CollectionPicker";
 import { Conversation } from "./components/Conversation";
+import { Sidebar } from "./components/Sidebar";
 import { SourcePanel } from "./components/SourcePanel";
 
 export default function App() {
-  const [collections, setCollections] = useState<Collection[]>([]);
   const [conversation, setConversation] = useState<ConversationData | null>(null);
 
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
@@ -25,10 +22,6 @@ export default function App() {
 
   const [escalatingIndex, setEscalatingIndex] = useState<number | null>(null);
   const [activeChunk, setActiveChunk] = useState<ChunkDetail | "unresolvable" | null>(null);
-
-  useEffect(() => {
-    fetchCollections().then(setCollections);
-  }, []);
 
   async function handleSelectCollection(name: string) {
     const created = await createConversation(name);
@@ -86,24 +79,27 @@ export default function App() {
     setActiveChunk(chunk ?? "unresolvable");
   }
 
-  if (!conversation) {
-    return <CollectionPicker collections={collections} onSelect={handleSelectCollection} />;
-  }
-
   return (
     <div style={{ display: "flex", height: "100%" }}>
+      <Sidebar selectedCollection={conversation?.collection ?? null} onSelectCollection={handleSelectCollection} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <Conversation
-          conversation={conversation}
-          pendingQuestion={pendingQuestion}
-          pendingText={pendingText}
-          streaming={streaming}
-          streamError={streamError}
-          escalatingIndex={escalatingIndex}
-          onAsk={handleAsk}
-          onEscalate={handleEscalate}
-          onCiteClick={handleCiteClick}
-        />
+        {conversation ? (
+          <Conversation
+            conversation={conversation}
+            pendingQuestion={pendingQuestion}
+            pendingText={pendingText}
+            streaming={streaming}
+            streamError={streamError}
+            escalatingIndex={escalatingIndex}
+            onAsk={handleAsk}
+            onEscalate={handleEscalate}
+            onCiteClick={handleCiteClick}
+          />
+        ) : (
+          <div className="empty-state">
+            <p>Pick a collection from the sidebar to start.</p>
+          </div>
+        )}
       </div>
       <SourcePanel chunk={activeChunk} onClose={() => setActiveChunk(null)} />
     </div>

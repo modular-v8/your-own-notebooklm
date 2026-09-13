@@ -361,6 +361,10 @@ def serve(
     corpus_dir: Path = typer.Option(DEFAULT_CORPUS_DIR, "--corpus-dir"),
     index_dir: Path = typer.Option(DEFAULT_FIXED_INDEX_DIR, "--index-dir"),
     conversations_dir: Path = typer.Option(DEFAULT_CONVERSATIONS_DIR, "--conversations-dir"),
+    uploads_dir: Path = typer.Option(Path("docs"), "--uploads-dir", help="Where uploaded documents are stored"),
+    collections_path: Path = typer.Option(
+        Path("collections.json"), "--collections-path", help="Writable user-collections file"
+    ),
     experiments_path: Path = typer.Option(DEFAULT_EXPERIMENTS_PATH, "--experiments"),
     static_dir: Path = typer.Option(DEFAULT_STATIC_DIR, "--static-dir", help="Built frontend (web/dist); skipped if absent"),
 ) -> None:
@@ -375,6 +379,8 @@ def serve(
             config_path=config_path,
             corpus_dir=corpus_dir,
             index_dir=index_dir,
+            uploads_dir=uploads_dir,
+            collections_path=collections_path,
             conversations_dir=conversations_dir,
             experiments_path=experiments_path,
             static_dir=static_dir,
