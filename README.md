@@ -2,6 +2,12 @@
 
 A browser-based chat interface for answering questions about your documents with cited sources. Built from the ground up to measure whether retrieval techniques actually work, using a frozen eval corpus and deterministic citation checking instead of subjective scores.
 
+## Demo
+
+<video src="media/demo.mp4" controls width="720">
+  Your browser doesn't support inline video. <a href="media/demo.mp4">Download the demo</a> instead.
+</video>
+
 ## Why this exists
 
 This project started as a learning exercise in RAG systems and retrieval measurement: finding out precisely what works and what doesn't in retrieval-augmented generation, rather than shipping a perfect product on the first try.
