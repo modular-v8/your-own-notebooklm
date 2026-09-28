@@ -4,7 +4,7 @@ A browser-based chat interface for answering questions about your documents with
 
 ## Demo
 
-📺 [Watch the demo](media/demo.mp4)
+<video src="https://github.com/user-attachments/assets/8d28e520-d6dd-4340-af34-f2ef801a81d2">
 
 ## Why this exists
 
