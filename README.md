@@ -4,9 +4,7 @@ A browser-based chat interface for answering questions about your documents with
 
 ## Demo
 
-<video src="media/demo.mp4" controls width="720">
-  Your browser doesn't support inline video. <a href="media/demo.mp4">Download the demo</a> instead.
-</video>
+📺 [Watch the demo](media/demo.mp4)
 
 ## Why this exists
 
